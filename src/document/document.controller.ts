@@ -10,7 +10,7 @@ import {
 import { DocumentReqDTO } from './DocumentReqDTO';
 import { DocumentService } from './document.service';
 
-@Controller('document')
+@Controller('documents')
 export class DocumentController {
     constructor(private readonly documentService: DocumentService) {}
 
