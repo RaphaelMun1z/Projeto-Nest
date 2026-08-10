@@ -6,9 +6,10 @@ import {
     Param,
     Patch,
     Post,
+    Query,
 } from '@nestjs/common';
-import { DocumentReqDTO } from './DocumentReqDTO';
 import { DocumentService } from './document.service';
+import type { DocumentReqDTO, FindAllParameters } from './document.dto';
 
 @Controller('documents')
 export class DocumentController {
@@ -20,8 +21,8 @@ export class DocumentController {
     }
 
     @Get()
-    findAll(): DocumentReqDTO[] {
-        return this.documentService.findAll();
+    findAll(@Query() params: FindAllParameters): DocumentReqDTO[] {
+        return this.documentService.findAll(params);
     }
 
     @Get('/:id')
