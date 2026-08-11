@@ -26,6 +26,12 @@ export interface FindAllParameters {
     status?: DocumentStatusEnum;
 }
 
+export interface DocumentSection {
+    number: number;
+    title: string;
+    content: string;
+}
+
 // DTO
 export interface ExtractedPdfResDTO {
     originalName: string;
@@ -33,7 +39,8 @@ export interface ExtractedPdfResDTO {
     sizeBytes: number;
     hash: string;
     pages: number;
-    content: string;
+    sections: DocumentSection[];
+    previewHtml: string;
 }
 
 export class CreateDocumentReqDTO {
