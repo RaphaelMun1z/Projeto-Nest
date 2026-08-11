@@ -30,8 +30,8 @@
 
 | Método | Caminho | Objetivo | Exemplo |
 |---|---|---|---|
-| POST | 🔒 `/documents/extract` | Receber e extrair o conteúdo de um PDF. | `multipart/form-data: file=documento.pdf` |
-| POST | 🔒 `/documents` | Criar registro de documento. | `{"fileName":"documento.pdf","sizeBytes":245760,"description":"Descrição do documento"}` |
+| POST | 🔒 `/documents/extract` | Receber e extrair o conteúdo de um PDF sem criar registro. | `multipart/form-data: file=documento.pdf` |
+| POST | 🔒 `/documents` | Extrair o PDF, salvar as seções e criar o registro. | `multipart/form-data: file=documento.pdf, description=Descrição` |
 | GET | 🔒 `/documents` | Listar documentos com filtros opcionais. | `?fileName=documento.pdf&status=COMPLETED` |
 | GET | 🔒 `/documents/:id` | Buscar documento pelo ID. | `{"id":"550e8400-e29b-41d4-a716-446655440000"}` |
 | PATCH | 🔒 `/documents/:id` | Atualizar parcialmente um documento. | `{"status":"COMPLETED","description":"Descrição atualizada"}` |

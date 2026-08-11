@@ -1,25 +1,50 @@
-import { Injectable } from '@nestjs/common';
-import { UserDTO, UserReqDTO } from './user.dto';
-import { v4 as uuid } from 'uuid';
+import { ConflictException, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { hashSync as bcryptHashSync } from 'bcrypt';
-import { userMock } from './user.mock';
+import { QueryFailedError, Repository } from 'typeorm';
+import { UserDTO, UserReqDTO } from './user.dto';
+import { UserEntity } from '../db/entities/user.entity';
 
 @Injectable()
 export class UserService {
-    private readonly users: UserDTO[] = userMock;
+    constructor(
+        @InjectRepository(UserEntity)
+        private readonly userRepository: Repository<UserEntity>,
+    ) {}
 
-    create(newUser: UserReqDTO): string {
-        const userDto: UserDTO = {
-            id: uuid(),
+    async create(newUser: UserReqDTO): Promise<string> {
+        const existingUser = await this.userRepository.findOneBy({
             username: newUser.username,
-            password: bcryptHashSync(newUser.password, 10),
-        };
+        });
 
-        this.users.push(userDto);
+        if (existingUser) {
+            throw new ConflictException(
+                `O nome de usuário "${newUser.username}" já está cadastrado.`,
+            );
+        }
+
+        try {
+            await this.userRepository.save({
+                username: newUser.username,
+                password: bcryptHashSync(newUser.password, 10),
+            });
+        } catch (error) {
+            if (
+                error instanceof QueryFailedError &&
+                (error.driverError as { code?: string }).code === '23505'
+            ) {
+                throw new ConflictException(
+                    `O nome de usuário "${newUser.username}" já está cadastrado.`,
+                );
+            }
+
+            throw error;
+        }
+
         return 'Usuário criado com sucesso';
     }
 
-    findByUsername(username: string): UserDTO | undefined {
-        return this.users.find((user) => user.username === username);
+    findByUsername(username: string): Promise<UserDTO | null> {
+        return this.userRepository.findOneBy({ username });
     }
 }

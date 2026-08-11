@@ -1,21 +1,31 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+    ConflictException,
+    HttpException,
+    HttpStatus,
+    Injectable,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Like, Repository } from 'typeorm';
 import {
     CreateDocumentReqDTO,
+    CreatedDocumentResDTO,
+    DocumentListResDTO,
     DocumentResDTO,
     DocumentStatusEnum,
     ExtractedPdfResDTO,
     FindAllParameters,
     UpdateDocumentReqDTO,
 } from './document.dto';
-import { documentsMock } from './document.mock';
-import { v4 as uuid } from 'uuid';
 import { PdfExtractionService } from './pdf-extraction.service';
+import { DocumentEntity } from '../db/entities/document.entity';
 
 @Injectable()
 export class DocumentService {
-    private documentsMock: DocumentResDTO[] = [...documentsMock];
-
-    constructor(private readonly pdfExtractionService: PdfExtractionService) {}
+    constructor(
+        @InjectRepository(DocumentEntity)
+        private readonly documentRepository: Repository<DocumentEntity>,
+        private readonly pdfExtractionService: PdfExtractionService,
+    ) {}
 
     extractPdf(
         file: Express.Multer.File | undefined,
@@ -23,65 +33,99 @@ export class DocumentService {
         return this.pdfExtractionService.extract(file);
     }
 
-    create(document: CreateDocumentReqDTO): string {
-        const now = new Date();
-        this.documentsMock.push({
-            id: uuid(),
-            status: DocumentStatusEnum.PENDING,
-            fileName: document.fileName,
-            sizeBytes: document.sizeBytes,
-            description: document.description ?? null,
-            createdAt: now,
-            updatedAt: now,
-        });
-        return 'Documento criado com sucesso';
-    }
+    async create(
+        file: Express.Multer.File | undefined,
+        document: CreateDocumentReqDTO,
+    ): Promise<CreatedDocumentResDTO> {
+        if (file) {
+            const existingDocument = await this.documentRepository.findOneBy({
+                fileName: file.originalname,
+            });
 
-    findAll(params: FindAllParameters): DocumentResDTO[] {
-        return this.documentsMock.filter((doc) => {
-            const matchesName = params.fileName
-                ? doc.fileName.includes(params.fileName)
-                : true;
-            const matchesStatus = params.status
-                ? doc.status === params.status
-                : true;
-            return matchesName && matchesStatus;
-        });
-    }
-
-    findById(id: string): DocumentResDTO | undefined {
-        const itemFound = this.documentsMock.filter((doc) => doc.id === id);
-        if (itemFound.length) {
-            return itemFound[0];
+            if (existingDocument) {
+                throw new ConflictException(
+                    `Já existe um documento com o nome de arquivo "${file.originalname}".`,
+                );
+            }
         }
+
+        const extractedDocument = await this.pdfExtractionService.extract(file);
+        const savedDocument = await this.documentRepository.save({
+            fileName: extractedDocument.fileName,
+            sizeBytes: extractedDocument.sizeBytes,
+            sections: extractedDocument.sections,
+            status: DocumentStatusEnum.COMPLETED,
+            description: document.description ?? null,
+        });
+
+        return {
+            id: savedDocument.id,
+            previewHtml: extractedDocument.previewHtml,
+        };
+    }
+
+    async findAll(params: FindAllParameters): Promise<DocumentListResDTO[]> {
+        const documents = await this.documentRepository.find({
+            select: {
+                id: true,
+                fileName: true,
+                sizeBytes: true,
+                status: true,
+                description: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+            where: {
+                ...(params.fileName
+                    ? { fileName: Like(`%${params.fileName}%`) }
+                    : {}),
+                ...(params.status ? { status: params.status } : {}),
+            },
+            order: { createdAt: 'DESC' },
+        });
+
+        return documents;
+    }
+
+    async findById(id: string): Promise<DocumentResDTO> {
+        const document = await this.documentRepository.findOneBy({ id });
+
+        if (document) {
+            return document;
+        }
+
         throw new HttpException(
             'Documento com ID ' + id + ' não encontrado',
             HttpStatus.NOT_FOUND,
         );
     }
 
-    update(id: string, updatedDocument: UpdateDocumentReqDTO): string {
-        const index = this.documentsMock.findIndex((doc) => doc.id === id);
-        if (index !== -1) {
-            this.documentsMock[index] = {
-                ...this.documentsMock[index],
-                ...updatedDocument,
-                updatedAt: new Date(),
-            };
+    async update(
+        id: string,
+        updatedDocument: UpdateDocumentReqDTO,
+    ): Promise<string> {
+        const result = await this.documentRepository.update(
+            id,
+            updatedDocument,
+        );
+
+        if (result.affected) {
             return 'Documento atualizado com sucesso';
         }
+
         throw new HttpException(
             'Documento com ID ' + id + ' não encontrado',
             HttpStatus.NOT_FOUND,
         );
     }
 
-    delete(id: string): string {
-        const index = this.documentsMock.findIndex((doc) => doc.id === id);
-        if (index !== -1) {
-            this.documentsMock.splice(index, 1);
+    async delete(id: string): Promise<string> {
+        const result = await this.documentRepository.delete(id);
+
+        if (result.affected) {
             return 'Documento excluído com sucesso';
         }
+
         throw new HttpException(
             'Documento com ID ' + id + ' não encontrado',
             HttpStatus.NOT_FOUND,

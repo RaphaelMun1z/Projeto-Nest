@@ -11,7 +11,7 @@ export class AuthController {
     signIn(
         @Body('username') username: string,
         @Body('password') password: string,
-    ): AuthResDTO {
+    ): Promise<AuthResDTO> {
         return this.authService.signIn(username, password);
     }
 }

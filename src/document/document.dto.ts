@@ -10,6 +10,7 @@ import {
     MinLength,
 } from 'class-validator';
 
+// ENUM
 export enum DocumentStatusEnum {
     PENDING = 'PENDING',
     PROCESSING = 'PROCESSING',
@@ -17,6 +18,7 @@ export enum DocumentStatusEnum {
     FAILED = 'FAILED',
 }
 
+// INTERFACE
 export interface FindAllParameters {
     fileName?: string;
     status?: DocumentStatusEnum;
@@ -36,16 +38,13 @@ export interface ExtractedPdfResDTO {
     previewHtml: string;
 }
 
+export interface CreatedDocumentResDTO {
+    id: string;
+    previewHtml: string;
+}
+
+// DTO
 export class CreateDocumentReqDTO {
-    @IsString()
-    @MinLength(3)
-    @MaxLength(255)
-    fileName!: string;
-
-    @IsInt()
-    @IsPositive()
-    sizeBytes!: number;
-
     @IsOptional()
     @IsString()
     @MaxLength(255)
@@ -84,6 +83,8 @@ export class DocumentResDTO {
     @IsInt()
     sizeBytes!: number;
 
+    sections!: DocumentSection[];
+
     @IsEnum(DocumentStatusEnum)
     status!: DocumentStatusEnum;
 
@@ -97,3 +98,5 @@ export class DocumentResDTO {
     @Type(() => Date)
     updatedAt!: Date;
 }
+
+export type DocumentListResDTO = Omit<DocumentResDTO, 'sections'>;

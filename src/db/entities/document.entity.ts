@@ -5,18 +5,29 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-import { DocumentStatusEnum } from '../../document/document.dto';
+import {
+    DocumentSection,
+    DocumentStatusEnum,
+} from '../../document/document.dto';
 
 @Entity({ name: 'tb_documents' })
 export class DocumentEntity {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
-    @Column({ name: 'file_name', type: 'varchar', length: 255 })
+    @Column({
+        name: 'file_name',
+        type: 'varchar',
+        length: 255,
+        unique: true,
+    })
     fileName!: string;
 
     @Column({ name: 'size_bytes', type: 'integer' })
     sizeBytes!: number;
+
+    @Column({ name: 'sections', type: 'jsonb', default: () => "'[]'::jsonb" })
+    sections!: DocumentSection[];
 
     @Column({
         name: 'status',

@@ -1,8 +1,8 @@
 {
     "info": {
         "_postman_id": "9c4f5df7-4c3f-4b94-9c0f-curso-nestjs",
-        "name": "Projeto NestJS",
-        "description": "Collection dos endpoints do Projeto NestJS.",
+        "name": "Projeto NestJS - API de Documentos",
+        "description": "Collection para testar rapidamente a API NestJS. Execute primeiro 'Criar usuário' e depois 'Login'. O token será salvo automaticamente para as requisições protegidas.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "event": [
@@ -11,7 +11,7 @@
             "script": {
                 "type": "text/javascript",
                 "exec": [
-                    "pm.collectionVariables.set('requestTimestamp', new Date().toISOString());"
+                    "pm.collectionVariables.set('dataRequisicao', new Date().toISOString());"
                 ]
             }
         }
@@ -19,29 +19,45 @@
     "variable": [
         {
             "key": "baseUrl",
-            "value": "http://localhost:3000"
+            "value": "http://localhost:3000",
+            "type": "string"
         },
         {
-            "key": "accessToken",
-            "value": ""
+            "key": "tokenAcesso",
+            "value": "",
+            "type": "string"
         },
         {
-            "key": "documentId",
-            "value": "550e8400-e29b-41d4-a716-446655440000"
+            "key": "usuarioTeste",
+            "value": "usuario.teste",
+            "type": "string"
         },
         {
-            "key": "pdfPath",
-            "value": ""
+            "key": "senhaTeste",
+            "value": "senha-segura-123",
+            "type": "string"
+        },
+        {
+            "key": "documentoId",
+            "value": "550e8400-e29b-41d4-a716-446655440000",
+            "type": "string"
+        },
+        {
+            "key": "caminhoPdf",
+            "value": "",
+            "type": "string"
         }
     ],
     "item": [
         {
-            "name": "Auth",
+            "name": "01 - Usuários",
+            "description": "Operações públicas de usuários. Crie o usuário de teste antes de realizar o login.",
             "item": [
                 {
-                    "name": "Login",
+                    "name": "Criar usuário de teste",
                     "request": {
                         "method": "POST",
+                        "description": "Cria um usuário usando as variáveis usuarioTeste e senhaTeste. Pode ser executado novamente apenas com outro nome de usuário.",
                         "header": [
                             {
                                 "key": "Content-Type",
@@ -50,7 +66,53 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"username\": \"usuario.exemplo\",\n  \"password\": \"senha-segura\"\n}",
+                            "raw": "{\n  \"username\": \"{{usuarioTeste}}\",\n  \"password\": \"{{senhaTeste}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["users"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Usuário criado ou requisição aceita', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "02 - Autenticação",
+            "description": "Autenticação JWT. O token retornado no login é salvo na variável tokenAcesso.",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "description": "Autentica usando o usuário de teste e salva o token para as requisições protegidas.",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"{{usuarioTeste}}\",\n  \"password\": \"{{senhaTeste}}\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -73,14 +135,13 @@
                                     "    pm.response.to.have.status(200);",
                                     "});",
                                     "",
-                                    "const response = pm.response.json();",
-                                    "pm.test('Resposta contém token', function () {",
-                                    "    pm.expect(response.token).to.be.a('string').and.not.empty;",
+                                    "const resposta = pm.response.json();",
+                                    "pm.test('Token recebido', function () {",
+                                    "    pm.expect(resposta.token).to.be.a('string').and.not.empty;",
                                     "});",
                                     "",
-                                    "pm.collectionVariables.set('accessToken', response.token);",
-                                    "pm.collectionVariables.set('tokenExpiresIn', response.expiresIn);",
-                                    "console.log('Token salvo na variável accessToken.');"
+                                    "pm.collectionVariables.set('tokenAcesso', resposta.token);",
+                                    "pm.collectionVariables.set('expiracaoToken', resposta.expiresIn);"
                                 ]
                             }
                         }
@@ -89,73 +150,31 @@
             ]
         },
         {
-            "name": "Users",
-            "item": [
-                {
-                    "name": "Create user",
-                    "request": {
-                        "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"username\": \"novo.usuario\",\n  \"password\": \"senha-segura\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/users",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["users"]
-                        }
-                    },
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "pm.test('Usuário criado', function () {",
-                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-                                    "});"
-                                ]
-                            }
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "name": "Documents",
+            "name": "03 - Documentos",
+            "description": "Endpoints protegidos de documentos. O tokenAcesso é aplicado automaticamente nesta pasta.",
             "auth": {
                 "type": "bearer",
                 "bearer": [
                     {
                         "key": "token",
-                        "value": "{{accessToken}}",
+                        "value": "{{tokenAcesso}}",
                         "type": "string"
                     }
                 ]
             },
             "item": [
                 {
-                    "name": "Extract PDF",
+                    "name": "Extrair conteúdo do PDF",
                     "request": {
                         "method": "POST",
+                        "description": "Envia um PDF no campo file e retorna as seções extraídas e o previewHtml. Configure caminhoPdf em uma variável local do Postman.",
                         "body": {
                             "mode": "formdata",
                             "formdata": [
                                 {
                                     "key": "file",
                                     "type": "file",
-                                    "src": "{{pdfPath}}"
+                                    "src": "{{caminhoPdf}}"
                                 }
                             ]
                         },
@@ -171,11 +190,14 @@
                             "script": {
                                 "type": "text/javascript",
                                 "exec": [
-                                    "pm.test('PDF processado', function () {",
-                                    "    pm.response.to.have.status(200);",
+                                    "pm.test('PDF extraído com sucesso', function () {",
+                                    "    pm.response.to.have.status(201);",
                                     "});",
-                                    "pm.test('Resposta é JSON', function () {",
-                                    "    pm.response.to.be.json;",
+                                    "",
+                                    "const resposta = pm.response.json();",
+                                    "pm.test('Resposta contém seções e preview HTML', function () {",
+                                    "    pm.expect(resposta.sections).to.be.an('array');",
+                                    "    pm.expect(resposta.previewHtml).to.be.a('string');",
                                     "});"
                                 ]
                             }
@@ -183,19 +205,29 @@
                     ]
                 },
                 {
-                    "name": "Create document",
+                    "name": "Criar documento",
                     "request": {
                         "method": "POST",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            }
-                        ],
+                        "description": "Extrai o PDF, salva as seções no documento e retorna apenas o id e o previewHtml.",
                         "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"fileName\": \"documento.pdf\",\n  \"sizeBytes\": 245760,\n  \"description\": \"Descrição do documento\"\n}",
-                            "options": { "raw": { "language": "json" } }
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": "{{caminhoPdf}}"
+                                },
+                                {
+                                    "key": "description",
+                                    "value": "Documento de teste rápido",
+                                    "type": "text"
+                                }
+                            ],
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
                         },
                         "url": {
                             "raw": "{{baseUrl}}/documents",
@@ -210,22 +242,40 @@
                                 "type": "text/javascript",
                                 "exec": [
                                     "pm.test('Documento criado', function () {",
-                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-                                    "});"
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "const resposta = pm.response.json();",
+                                    "pm.test('Resposta contém apenas id e preview HTML', function () {",
+                                    "    pm.expect(resposta.id).to.be.a('string').and.not.empty;",
+                                    "    pm.expect(resposta.previewHtml).to.be.a('string').and.not.empty;",
+                                    "    pm.expect(Object.keys(resposta)).to.have.members(['id', 'previewHtml']);",
+                                    "});",
+                                    "pm.collectionVariables.set('documentoId', resposta.id);"
                                 ]
                             }
                         }
                     ]
                 },
                 {
-                    "name": "List documents",
+                    "name": "Listar documentos",
                     "request": {
                         "method": "GET",
+                        "description": "Lista documentos com filtros opcionais por nome e status.",
                         "url": {
-                            "raw": "{{baseUrl}}/documents?status=COMPLETED",
+                            "raw": "{{baseUrl}}/documents?fileName=documento&status=COMPLETED",
                             "host": ["{{baseUrl}}"],
                             "path": ["documents"],
-                            "query": [{ "key": "status", "value": "COMPLETED" }]
+                            "query": [
+                                {
+                                    "key": "fileName",
+                                    "value": "documento"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "COMPLETED"
+                                }
+                            ]
                         }
                     },
                     "event": [
@@ -237,6 +287,9 @@
                                     "pm.test('Documentos listados', function () {",
                                     "    pm.response.to.have.status(200);",
                                     "    pm.expect(pm.response.json()).to.be.an('array');",
+                                    "    pm.response.json().forEach(function (documento) {",
+                                    "        pm.expect(documento).not.to.have.property('sections');",
+                                    "    });",
                                     "});"
                                 ]
                             }
@@ -244,20 +297,22 @@
                     ]
                 },
                 {
-                    "name": "Get document",
+                    "name": "Buscar documento por ID",
                     "request": {
                         "method": "GET",
+                        "description": "Busca um documento pelo UUID definido em documentoId.",
                         "url": {
-                            "raw": "{{baseUrl}}/documents/{{documentId}}",
+                            "raw": "{{baseUrl}}/documents/{{documentoId}}",
                             "host": ["{{baseUrl}}"],
-                            "path": ["documents", "{{documentId}}"]
+                            "path": ["documents", "{{documentoId}}"]
                         }
                     }
                 },
                 {
-                    "name": "Update document",
+                    "name": "Atualizar documento",
                     "request": {
                         "method": "PATCH",
+                        "description": "Atualiza parcialmente o status ou a descrição do documento.",
                         "header": [
                             {
                                 "key": "Content-Type",
@@ -266,24 +321,29 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"COMPLETED\"\n}",
-                            "options": { "raw": { "language": "json" } }
+                            "raw": "{\n  \"status\": \"COMPLETED\",\n  \"description\": \"Documento processado com sucesso\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
                         },
                         "url": {
-                            "raw": "{{baseUrl}}/documents/{{documentId}}",
+                            "raw": "{{baseUrl}}/documents/{{documentoId}}",
                             "host": ["{{baseUrl}}"],
-                            "path": ["documents", "{{documentId}}"]
+                            "path": ["documents", "{{documentoId}}"]
                         }
                     }
                 },
                 {
-                    "name": "Delete document",
+                    "name": "Excluir documento",
                     "request": {
                         "method": "DELETE",
+                        "description": "Remove o documento definido em documentoId.",
                         "url": {
-                            "raw": "{{baseUrl}}/documents/{{documentId}}",
+                            "raw": "{{baseUrl}}/documents/{{documentoId}}",
                             "host": ["{{baseUrl}}"],
-                            "path": ["documents", "{{documentId}}"]
+                            "path": ["documents", "{{documentoId}}"]
                         }
                     }
                 }

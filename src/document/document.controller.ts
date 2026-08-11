@@ -13,12 +13,12 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentService } from './document.service';
+import { CreateDocumentReqDTO, UpdateDocumentReqDTO } from './document.dto';
 import type {
-    CreateDocumentReqDTO,
     DocumentResDTO,
+    DocumentListResDTO,
     ExtractedPdfResDTO,
     FindAllParameters,
-    UpdateDocumentReqDTO,
 } from './document.dto';
 import { AuthGuard } from '../auth/auth.guard';
 
@@ -36,17 +36,21 @@ export class DocumentController {
     }
 
     @Post()
-    create(@Body() document: CreateDocumentReqDTO): string {
-        return this.documentService.create(document);
+    @UseInterceptors(FileInterceptor('file'))
+    create(
+        @UploadedFile() file: Express.Multer.File | undefined,
+        @Body() document: CreateDocumentReqDTO,
+    ) {
+        return this.documentService.create(file, document);
     }
 
     @Get()
-    findAll(@Query() params: FindAllParameters): DocumentResDTO[] {
+    findAll(@Query() params: FindAllParameters): Promise<DocumentListResDTO[]> {
         return this.documentService.findAll(params);
     }
 
     @Get('/:id')
-    findById(@Param('id') id: string): DocumentResDTO | undefined {
+    findById(@Param('id') id: string): Promise<DocumentResDTO> {
         return this.documentService.findById(id);
     }
 
@@ -54,12 +58,12 @@ export class DocumentController {
     update(
         @Param('id') id: string,
         @Body() updatedDocument: UpdateDocumentReqDTO,
-    ): string {
+    ): Promise<string> {
         return this.documentService.update(id, updatedDocument);
     }
 
     @Delete('/:id')
-    delete(@Param('id') id: string): string {
+    delete(@Param('id') id: string): Promise<string> {
         return this.documentService.delete(id);
     }
 }

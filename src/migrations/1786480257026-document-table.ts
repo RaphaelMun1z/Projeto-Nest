@@ -7,11 +7,13 @@ export class DocumentTable1786480257026 implements MigrationInterface {
             "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
             "file_name" character varying(255) NOT NULL,
             "size_bytes" integer NOT NULL,
+            "sections" jsonb NOT NULL DEFAULT '[]'::jsonb,
             "status" character varying NOT NULL DEFAULT 'PENDING',
             "description" character varying(255),
             "created_at" TIMESTAMP NOT NULL DEFAULT now(),
             "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
             CONSTRAINT "CHK_document_status" CHECK ("status" IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')),
+            CONSTRAINT "UQ_tb_documents_file_name" UNIQUE ("file_name"),
             CONSTRAINT "PK_document_id" PRIMARY KEY ("id")
         );`);
     }
