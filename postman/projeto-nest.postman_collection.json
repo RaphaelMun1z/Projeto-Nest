@@ -1,0 +1,293 @@
+{
+    "info": {
+        "_postman_id": "9c4f5df7-4c3f-4b94-9c0f-curso-nestjs",
+        "name": "Projeto NestJS",
+        "description": "Collection dos endpoints do Projeto NestJS.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "pm.collectionVariables.set('requestTimestamp', new Date().toISOString());"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3000"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "documentId",
+            "value": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        {
+            "key": "pdfPath",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"usuario.exemplo\",\n  \"password\": \"senha-segura\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["auth", "login"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Login realizado com sucesso', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "const response = pm.response.json();",
+                                    "pm.test('Resposta contém token', function () {",
+                                    "    pm.expect(response.token).to.be.a('string').and.not.empty;",
+                                    "});",
+                                    "",
+                                    "pm.collectionVariables.set('accessToken', response.token);",
+                                    "pm.collectionVariables.set('tokenExpiresIn', response.expiresIn);",
+                                    "console.log('Token salvo na variável accessToken.');"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Users",
+            "item": [
+                {
+                    "name": "Create user",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"novo.usuario\",\n  \"password\": \"senha-segura\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["users"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Usuário criado', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Documents",
+            "auth": {
+                "type": "bearer",
+                "bearer": [
+                    {
+                        "key": "token",
+                        "value": "{{accessToken}}",
+                        "type": "string"
+                    }
+                ]
+            },
+            "item": [
+                {
+                    "name": "Extract PDF",
+                    "request": {
+                        "method": "POST",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": "{{pdfPath}}"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/documents/extract",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["documents", "extract"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('PDF processado', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Resposta é JSON', function () {",
+                                    "    pm.response.to.be.json;",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Create document",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"originalName\": \"documento.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"sizeBytes\": 245760,\n  \"hash\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"storageKey\": \"documents/id-exemplo/documento.pdf\",\n  \"extractedTextRef\": \"extracted-text/id-exemplo.txt\"\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/documents",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["documents"]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Documento criado', function () {",
+                                    "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "List documents",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/documents?status=COMPLETED",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["documents"],
+                            "query": [{ "key": "status", "value": "COMPLETED" }]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Documentos listados', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "    pm.expect(pm.response.json()).to.be.an('array');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get document",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/documents/{{documentId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["documents", "{{documentId}}"]
+                        }
+                    }
+                },
+                {
+                    "name": "Update document",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"COMPLETED\"\n}",
+                            "options": { "raw": { "language": "json" } }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/documents/{{documentId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["documents", "{{documentId}}"]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete document",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{baseUrl}}/documents/{{documentId}}",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["documents", "{{documentId}}"]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

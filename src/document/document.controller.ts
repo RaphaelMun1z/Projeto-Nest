@@ -7,10 +7,19 @@ import {
     Patch,
     Post,
     Query,
+    UploadedFile,
     UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { DocumentService } from './document.service';
-import type { DocumentReqDTO, FindAllParameters } from './document.dto';
+import type {
+    CreateDocumentReqDTO,
+    DocumentResDTO,
+    ExtractedPdfResDTO,
+    FindAllParameters,
+    UpdateDocumentReqDTO,
+} from './document.dto';
 import { AuthGuard } from '../auth/auth.guard';
 
 @UseGuards(AuthGuard)
@@ -18,25 +27,33 @@ import { AuthGuard } from '../auth/auth.guard';
 export class DocumentController {
     constructor(private readonly documentService: DocumentService) {}
 
+    @Post('extract')
+    @UseInterceptors(FileInterceptor('file'))
+    extract(
+        @UploadedFile() file: Express.Multer.File | undefined,
+    ): Promise<ExtractedPdfResDTO> {
+        return this.documentService.extractPdf(file);
+    }
+
     @Post()
-    create(@Body() document: DocumentReqDTO): string {
+    create(@Body() document: CreateDocumentReqDTO): string {
         return this.documentService.create(document);
     }
 
     @Get()
-    findAll(@Query() params: FindAllParameters): DocumentReqDTO[] {
+    findAll(@Query() params: FindAllParameters): DocumentResDTO[] {
         return this.documentService.findAll(params);
     }
 
     @Get('/:id')
-    findById(@Param('id') id: string): DocumentReqDTO | undefined {
+    findById(@Param('id') id: string): DocumentResDTO | undefined {
         return this.documentService.findById(id);
     }
 
     @Patch('/:id')
     update(
         @Param('id') id: string,
-        @Body() updatedDocument: DocumentReqDTO,
+        @Body() updatedDocument: UpdateDocumentReqDTO,
     ): string {
         return this.documentService.update(id, updatedDocument);
     }
