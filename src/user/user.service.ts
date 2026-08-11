@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserReqDTO } from './user.dto';
+import { UserReqDTO, UserResDTO } from './user.dto';
 import { v4 as uuid } from 'uuid';
 import { hashSync as bcryptHashSync } from 'bcrypt';
 
@@ -63,5 +63,9 @@ export class UserService {
         newUser.password = bcryptHashSync(newUser.password, 10);
         this.users.push(newUser);
         return 'Usuário criado com sucesso';
+    }
+
+    findByUsername(username: string): UserResDTO | undefined {
+        return this.users.find((user) => user.username === username);
     }
 }

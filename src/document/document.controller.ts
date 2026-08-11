@@ -7,10 +7,13 @@ import {
     Patch,
     Post,
     Query,
+    UseGuards,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
 import type { DocumentReqDTO, FindAllParameters } from './document.dto';
+import { AuthGuard } from '../auth/auth.guard';
 
+@UseGuards(AuthGuard)
 @Controller('documents')
 export class DocumentController {
     constructor(private readonly documentService: DocumentService) {}
