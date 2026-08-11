@@ -1,9 +1,7 @@
 import { Type } from 'class-transformer';
 import {
     IsEnum,
-    IsHash,
     IsInt,
-    IsMimeType,
     IsOptional,
     IsPositive,
     IsString,
@@ -12,7 +10,6 @@ import {
     MinLength,
 } from 'class-validator';
 
-// ENUM
 export enum DocumentStatusEnum {
     PENDING = 'PENDING',
     PROCESSING = 'PROCESSING',
@@ -20,9 +17,8 @@ export enum DocumentStatusEnum {
     FAILED = 'FAILED',
 }
 
-// INTERFACE
 export interface FindAllParameters {
-    originalName?: string;
+    fileName?: string;
     status?: DocumentStatusEnum;
 }
 
@@ -32,12 +28,9 @@ export interface DocumentSection {
     content: string;
 }
 
-// DTO
 export interface ExtractedPdfResDTO {
-    originalName: string;
-    mimeType: 'application/pdf';
+    fileName: string;
     sizeBytes: number;
-    hash: string;
     pages: number;
     sections: DocumentSection[];
     previewHtml: string;
@@ -47,25 +40,16 @@ export class CreateDocumentReqDTO {
     @IsString()
     @MinLength(3)
     @MaxLength(255)
-    originalName!: string;
-
-    @IsMimeType()
-    mimeType!: string;
+    fileName!: string;
 
     @IsInt()
     @IsPositive()
     sizeBytes!: number;
 
-    @IsHash('sha256')
-    hash!: string;
-
-    @IsString()
-    @MaxLength(255)
-    storageKey!: string;
-
     @IsOptional()
     @IsString()
-    extractedTextRef?: string | null;
+    @MaxLength(255)
+    description?: string | null;
 }
 
 export class UpdateDocumentReqDTO {
@@ -73,20 +57,12 @@ export class UpdateDocumentReqDTO {
     @IsString()
     @MinLength(3)
     @MaxLength(255)
-    originalName?: string;
-
-    @IsOptional()
-    @IsMimeType()
-    mimeType?: string;
+    fileName?: string;
 
     @IsOptional()
     @IsInt()
     @IsPositive()
     sizeBytes?: number;
-
-    @IsOptional()
-    @IsHash('sha256')
-    hash?: string;
 
     @IsOptional()
     @IsEnum(DocumentStatusEnum)
@@ -95,11 +71,7 @@ export class UpdateDocumentReqDTO {
     @IsOptional()
     @IsString()
     @MaxLength(255)
-    storageKey?: string;
-
-    @IsOptional()
-    @IsString()
-    extractedTextRef?: string | null;
+    description?: string | null;
 }
 
 export class DocumentResDTO {
@@ -107,26 +79,17 @@ export class DocumentResDTO {
     id!: string;
 
     @IsString()
-    originalName!: string;
-
-    @IsMimeType()
-    mimeType!: string;
+    fileName!: string;
 
     @IsInt()
     sizeBytes!: number;
 
-    @IsHash('sha256')
-    hash!: string;
-
     @IsEnum(DocumentStatusEnum)
     status!: DocumentStatusEnum;
 
-    @IsString()
-    storageKey!: string;
-
     @IsOptional()
     @IsString()
-    extractedTextRef!: string | null;
+    description!: string | null;
 
     @Type(() => Date)
     createdAt!: Date;

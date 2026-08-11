@@ -28,12 +28,9 @@ export class DocumentService {
         this.documentsMock.push({
             id: uuid(),
             status: DocumentStatusEnum.PENDING,
-            originalName: document.originalName,
-            mimeType: document.mimeType,
+            fileName: document.fileName,
             sizeBytes: document.sizeBytes,
-            hash: document.hash,
-            storageKey: document.storageKey,
-            extractedTextRef: document.extractedTextRef ?? null,
+            description: document.description ?? null,
             createdAt: now,
             updatedAt: now,
         });
@@ -42,8 +39,8 @@ export class DocumentService {
 
     findAll(params: FindAllParameters): DocumentResDTO[] {
         return this.documentsMock.filter((doc) => {
-            const matchesName = params.originalName
-                ? doc.originalName.includes(params.originalName)
+            const matchesName = params.fileName
+                ? doc.fileName.includes(params.fileName)
                 : true;
             const matchesStatus = params.status
                 ? doc.status === params.status

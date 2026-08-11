@@ -194,7 +194,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"originalName\": \"documento.pdf\",\n  \"mimeType\": \"application/pdf\",\n  \"sizeBytes\": 245760,\n  \"hash\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"storageKey\": \"documents/id-exemplo/documento.pdf\",\n  \"extractedTextRef\": \"extracted-text/id-exemplo.txt\"\n}",
+                            "raw": "{\n  \"fileName\": \"documento.pdf\",\n  \"sizeBytes\": 245760,\n  \"description\": \"Descrição do documento\"\n}",
                             "options": { "raw": { "language": "json" } }
                         },
                         "url": {

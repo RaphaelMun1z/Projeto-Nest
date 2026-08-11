@@ -31,15 +31,23 @@
 | Método | Caminho | Objetivo | Exemplo |
 |---|---|---|---|
 | POST | 🔒 `/documents/extract` | Receber e extrair o conteúdo de um PDF. | `multipart/form-data: file=documento.pdf` |
-| POST | 🔒 `/documents` | Criar registro de documento. | `{"originalName":"documento.pdf","mimeType":"application/pdf","sizeBytes":245760,"hash":"aaaaaaaa...","storageKey":"documents/id/documento.pdf"}` |
-| GET | 🔒 `/documents` | Listar documentos com filtros opcionais. | `?originalName=documento.pdf&status=COMPLETED` |
+| POST | 🔒 `/documents` | Criar registro de documento. | `{"fileName":"documento.pdf","sizeBytes":245760,"description":"Descrição do documento"}` |
+| GET | 🔒 `/documents` | Listar documentos com filtros opcionais. | `?fileName=documento.pdf&status=COMPLETED` |
 | GET | 🔒 `/documents/:id` | Buscar documento pelo ID. | `{"id":"550e8400-e29b-41d4-a716-446655440000"}` |
-| PATCH | 🔒 `/documents/:id` | Atualizar parcialmente um documento. | `{"status":"COMPLETED","extractedTextRef":"extracted-text/id.txt"}` |
+| PATCH | 🔒 `/documents/:id` | Atualizar parcialmente um documento. | `{"status":"COMPLETED","description":"Descrição atualizada"}` |
 | DELETE | 🔒 `/documents/:id` | Remover documento pelo ID. | `{"id":"550e8400-e29b-41d4-a716-446655440000"}` |
 
 </details>
 
 ## Comandos
+
+### Migrations
+
+| Objetivo | Comando |
+|---|---|
+| Criar uma migration com nome personalizado | `npm run migration:create --name=document-table` |
+| Executar as migrations pendentes | `npm run migration:run` |
+| Reverter a última migration | `npm run migration:revert` |
 
 | Objetivo | Comando |
 |---|---|
@@ -98,5 +106,3 @@ O formato abreviado `nest g` significa `nest generate`. O caminho pode ser alter
 | Adicionar uma dependência de desenvolvimento | `npm i -D nome-do-pacote` |
 | Remover uma dependência | `npm uninstall nome-do-pacote` |
 | Atualizar dependências | `npm update` |
-
-

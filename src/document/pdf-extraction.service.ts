@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHash } from 'node:crypto';
 import { DocumentSection, ExtractedPdfResDTO } from './document.dto';
 
 // eslint-disable-next-line @typescript-eslint/no-implied-eval
@@ -54,10 +53,8 @@ export class PdfExtractionService {
             const sections = this.extractSections(normalizedText);
             this.validateSections(sections);
             return {
-                originalName: file.originalname,
-                mimeType: 'application/pdf',
+                fileName: file.originalname,
                 sizeBytes: file.size,
-                hash: createHash('sha256').update(file.buffer).digest('hex'),
                 pages: result.pages.length,
                 sections,
                 previewHtml: this.buildPreviewHtml(sections),
