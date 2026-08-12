@@ -8,11 +8,12 @@ export class DocumentTable1786480257026 implements MigrationInterface {
             "file_name" character varying(255) NOT NULL,
             "size_bytes" integer NOT NULL,
             "sections" jsonb NOT NULL DEFAULT '[]'::jsonb,
-            "status" character varying NOT NULL DEFAULT 'PENDING',
+            "disciplina" character varying(255) NOT NULL,
+            "universidade" character varying(255) NOT NULL,
+            "ano_curriculo" integer NOT NULL,
             "description" character varying(255),
             "created_at" TIMESTAMP NOT NULL DEFAULT now(),
             "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
-            CONSTRAINT "CHK_document_status" CHECK ("status" IN ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED')),
             CONSTRAINT "UQ_tb_documents_file_name" UNIQUE ("file_name"),
             CONSTRAINT "PK_document_id" PRIMARY KEY ("id")
         );`);

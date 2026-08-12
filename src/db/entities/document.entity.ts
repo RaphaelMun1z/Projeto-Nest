@@ -5,10 +5,7 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-import {
-    DocumentSection,
-    DocumentStatusEnum,
-} from '../../document/document.dto';
+import { DocumentSection } from '../../document/document.dto';
 
 @Entity({ name: 'tb_documents' })
 export class DocumentEntity {
@@ -29,12 +26,14 @@ export class DocumentEntity {
     @Column({ name: 'sections', type: 'jsonb', default: () => "'[]'::jsonb" })
     sections!: DocumentSection[];
 
-    @Column({
-        name: 'status',
-        type: 'varchar',
-        default: DocumentStatusEnum.PENDING,
-    })
-    status!: DocumentStatusEnum;
+    @Column({ name: 'disciplina', type: 'varchar', length: 255 })
+    disciplina!: string;
+
+    @Column({ name: 'universidade', type: 'varchar', length: 255 })
+    universidade!: string;
+
+    @Column({ name: 'ano_curriculo', type: 'integer' })
+    ano_curriculo!: number;
 
     @Column({
         name: 'description',

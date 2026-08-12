@@ -2,8 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentSection, ExtractedPdfResDTO } from './document.dto';
 
-// O LiteParse é ESM-only. O import dinâmico evita conflito
-// com projetos NestJS compilados como CommonJS.
+// Carrega o LiteParse dinamicamente para evitar conflito com o CommonJS.
 // eslint-disable-next-line @typescript-eslint/no-implied-eval
 const loadLiteParse = new Function(
     'return import("@llamaindex/liteparse")',
@@ -80,10 +79,6 @@ export class PdfExtractionService {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Validação do arquivo
-    // -------------------------------------------------------------------------
-
     private validatePdf(
         file: Express.Multer.File | undefined,
     ): asserts file is Express.Multer.File {
@@ -110,10 +105,6 @@ export class PdfExtractionService {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Normalização
-    // -------------------------------------------------------------------------
-
     private normalizeExtractedText(text: string): string {
         return (
             text
@@ -126,10 +117,10 @@ export class PdfExtractionService {
                 // Remove cabeçalhos repetidos gerados pelo SEI.
                 .filter((line) => !this.isSeiHeader(line))
 
-                // Remove URL de impressão presente no topo/rodapé das páginas.
+                // Remove a URL de impressão presente no topo ou rodapé das páginas.
                 .filter((line) => !this.isSeiPrintUrl(line))
 
-                // Remove indicadores de página como "1/4", "2/4" etc.
+                // Remove indicadores de página como "1/4" e "2/4".
                 .filter((line) => !this.isPageIndicator(line))
 
                 .join('\n')
@@ -151,10 +142,6 @@ export class PdfExtractionService {
     private isPageIndicator(line: string): boolean {
         return /^\d+\/\d+$/.test(line);
     }
-
-    // -------------------------------------------------------------------------
-    // Separação das seções
-    // -------------------------------------------------------------------------
 
     private extractSections(text: string): DocumentSection[] {
         const sectionPattern =
@@ -188,10 +175,7 @@ export class PdfExtractionService {
         return sections;
     }
 
-    /**
-     * O novo template não possui "0. IDENTIFICAÇÃO".
-     * Tudo antes de "1. OBJETIVOS" corresponde ao cabeçalho da ficha.
-     */
+    /** Separa o cabeçalho da ficha antes da primeira seção numerada. */
     private addIdentificationSection(
         text: string,
         matches: RegExpMatchArray[],
@@ -225,10 +209,6 @@ export class PdfExtractionService {
             );
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Preview HTML
-    // -------------------------------------------------------------------------
 
     private buildPreviewHtml(sections: DocumentSection[]): string {
         const sectionsHtml = sections
@@ -284,7 +264,7 @@ export class PdfExtractionService {
             font-size: 0.98rem;
         }
 
-        /* Identificação */
+        /* Organiza a identificação do documento. */
 
         .identification-header {
             display: flex;
@@ -321,7 +301,7 @@ export class PdfExtractionService {
             font-size: 0.95rem;
         }
 
-        /* Listas */
+        /* Organiza as listas do documento. */
 
         ol,
         ul {
@@ -351,7 +331,7 @@ export class PdfExtractionService {
             margin-top: 0.15rem;
         }
 
-        /* Conteúdo normal */
+        /* Organiza o conteúdo normal. */
 
         .text-block {
             white-space: normal;
@@ -382,10 +362,6 @@ export class PdfExtractionService {
                 return this.buildDefaultSection(section);
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Identificação
-    // -------------------------------------------------------------------------
 
     private buildIdentificationTable(content: string): string {
         const lines = this.getNonEmptyLines(content);
@@ -481,20 +457,13 @@ export class PdfExtractionService {
         return lines[index + 1] ?? '';
     }
 
-    /**
-     * O LiteParse mantém vários espaços entre as "colunas" da tabela.
-     * Esses espaços são usados para recuperar os valores.
-     */
+    /** Separa as colunas preservadas pelo LiteParse pelos espaços consecutivos. */
     private splitColumns(value: string): string[] {
         return value
             .split(/\s{2,}/)
             .map((item) => item.trim())
             .filter(Boolean);
     }
-
-    // -------------------------------------------------------------------------
-    // Objetivos
-    // -------------------------------------------------------------------------
 
     private buildObjectivesSection(section: DocumentSection): string {
         const lines = this.getNonEmptyLines(section.content);
@@ -534,10 +503,7 @@ export class PdfExtractionService {
 </section>`;
     }
 
-    /**
-     * Os objetivos específicos normalmente terminam em ";"
-     * e o último em ".". Linhas quebradas pelo PDF são unidas.
-     */
+    /** Une as linhas quebradas e separa os objetivos por ponto e vírgula ou ponto. */
     private buildObjectiveItems(lines: string[]): string {
         const items: string[] = [];
 
@@ -561,10 +527,6 @@ export class PdfExtractionService {
             .join('');
     }
 
-    // -------------------------------------------------------------------------
-    // Programa
-    // -------------------------------------------------------------------------
-
     private buildProgramSection(section: DocumentSection): string {
         const lines = this.getNonEmptyLines(section.content);
 
@@ -581,14 +543,7 @@ export class PdfExtractionService {
 </section>`;
     }
 
-    /**
-     * Reconhece:
-     *
-     * 1. Item principal
-     * 1.1. Subitem
-     * 1.2. Subitem
-     * 2. Outro item
-     */
+    /** Organiza itens principais e subitens numerados em uma hierarquia HTML. */
     private buildNumberedHierarchy(lines: string[]): string {
         const groups: Array<{
             text: string;
@@ -634,7 +589,7 @@ export class PdfExtractionService {
                 continue;
             }
 
-            // Linha de continuação produzida pela quebra visual do PDF.
+            // Une a linha de continuação produzida pela quebra visual do PDF.
             if (currentGroup && currentChildIndex >= 0) {
                 currentGroup.children[currentChildIndex] += ` ${line}`;
 
@@ -675,10 +630,6 @@ export class PdfExtractionService {
     ${childrenHtml}
 </li>`;
     }
-
-    // -------------------------------------------------------------------------
-    // Seções comuns
-    // -------------------------------------------------------------------------
 
     private buildDefaultSection(section: DocumentSection): string {
         return `
@@ -731,10 +682,6 @@ export class PdfExtractionService {
 
         return `<p>${this.escapeHtml(content)}</p>`;
     }
-
-    // -------------------------------------------------------------------------
-    // Utilitários
-    // -------------------------------------------------------------------------
 
     private getNonEmptyLines(content: string): string[] {
         return content

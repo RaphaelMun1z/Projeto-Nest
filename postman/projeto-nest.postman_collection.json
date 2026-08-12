@@ -52,6 +52,9 @@
                             "mode": "formdata",
                             "formdata": [
                                 { "key": "file", "type": "file", "src": "{{caminhoPdf}}" },
+                                { "key": "disciplina", "value": "Engenharia de Software", "type": "text" },
+                                { "key": "universidade", "value": "Universidade de Teste", "type": "text" },
+                                { "key": "ano_curriculo", "value": "2026", "type": "text" },
                                 { "key": "description", "value": "Documento de teste", "type": "text" }
                             ]
                         },
@@ -66,14 +69,16 @@
                     "name": "Listar documentos",
                     "request": {
                         "method": "GET",
-                        "description": "Lista documentos. Os filtros são opcionais.",
+                        "description": "Lista documentos. Todos os filtros são opcionais.",
                         "url": {
-                            "raw": "{{baseUrl}}/documents?fileName=documento&status=COMPLETED",
+                            "raw": "{{baseUrl}}/documents?fileName=documento&disciplina=Engenharia&universidade=Teste&ano_curriculo=2026",
                             "host": ["{{baseUrl}}"],
                             "path": ["documents"],
                             "query": [
                                 { "key": "fileName", "value": "documento" },
-                                { "key": "status", "value": "COMPLETED" }
+                                { "key": "disciplina", "value": "Engenharia" },
+                                { "key": "universidade", "value": "Teste" },
+                                { "key": "ano_curriculo", "value": "2026" }
                             ]
                         }
                     }
@@ -100,7 +105,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"status\": \"COMPLETED\",\n  \"description\": \"Documento processado com sucesso\"\n}",
+                            "raw": "{\n  \"disciplina\": \"Engenharia de Software\",\n  \"universidade\": \"Universidade de Teste\",\n  \"ano_curriculo\": 2026,\n  \"description\": \"Documento processado com sucesso\"\n}",
                             "options": { "raw": { "language": "json" } }
                         },
                         "url": {

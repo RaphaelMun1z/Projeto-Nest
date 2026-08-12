@@ -80,7 +80,7 @@ npm run start:prod
 |---|---|---|
 | POST | `/documents/extract` | Extrai o conteúdo de um PDF sem salvar um documento. |
 | POST | `/documents` | Extrai o PDF e cria um documento. |
-| GET | `/documents` | Lista documentos. Aceita os filtros opcionais `fileName` e `status`. |
+| GET | `/documents` | Lista documentos. Aceita os filtros opcionais `fileName`, `disciplina`, `universidade` e `ano_curriculo`. |
 | GET | `/documents/:id` | Busca um documento pelo UUID. |
 | PATCH | `/documents/:id` | Atualiza parcialmente um documento. |
 | DELETE | `/documents/:id` | Remove um documento. |
@@ -90,6 +90,9 @@ npm run start:prod
 Os endpoints `POST /documents/extract` e `POST /documents` usam `multipart/form-data`:
 
 - `file`: arquivo PDF obrigatório
+- `disciplina`: disciplina do documento, obrigatória em `POST /documents`
+- `universidade`: universidade do documento, obrigatória em `POST /documents`
+- `ano_curriculo`: ano do currículo, obrigatório em `POST /documents`, entre 1900 e 2100
 - `description`: descrição opcional, usada somente em `POST /documents`
 
 Exemplo com cURL:
@@ -102,16 +105,18 @@ curl -X POST http://localhost:3000/documents/extract \
 ### Listar documentos com filtros
 
 ```text
-GET /documents?fileName=documento&status=COMPLETED
+GET /documents?fileName=documento&disciplina=Engenharia&universidade=Teste&ano_curriculo=2026
 ```
 
-Os status aceitos são `PENDING`, `PROCESSING`, `COMPLETED` e `FAILED`.
+Os filtros textuais por `disciplina` e `universidade` fazem busca parcial, e `ano_curriculo` faz busca exata.
 
 ### Atualizar documento
 
 ```json
 {
-  "status": "COMPLETED",
+  "disciplina": "Engenharia de Software",
+  "universidade": "Universidade de Teste",
+  "ano_curriculo": 2026,
   "description": "Documento processado"
 }
 ```

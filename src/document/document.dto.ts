@@ -1,27 +1,38 @@
 import { Type } from 'class-transformer';
 import {
-    IsEnum,
     IsInt,
     IsOptional,
     IsPositive,
     IsString,
     IsUUID,
+    Max,
     MaxLength,
+    Min,
     MinLength,
 } from 'class-validator';
 
-// ENUM
-export enum DocumentStatusEnum {
-    PENDING = 'PENDING',
-    PROCESSING = 'PROCESSING',
-    COMPLETED = 'COMPLETED',
-    FAILED = 'FAILED',
-}
-
-// INTERFACE
-export interface FindAllParameters {
+export class FindAllParameters {
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
     fileName?: string;
-    status?: DocumentStatusEnum;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    disciplina?: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(255)
+    universidade?: string;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1900)
+    @Max(2100)
+    ano_curriculo?: number;
 }
 
 export interface DocumentSection {
@@ -43,8 +54,23 @@ export interface CreatedDocumentResDTO {
     previewHtml: string;
 }
 
-// DTO
 export class CreateDocumentReqDTO {
+    @IsString()
+    @MinLength(2)
+    @MaxLength(255)
+    disciplina!: string;
+
+    @IsString()
+    @MinLength(2)
+    @MaxLength(255)
+    universidade!: string;
+
+    @Type(() => Number)
+    @IsInt()
+    @Min(1900)
+    @Max(2100)
+    ano_curriculo!: number;
+
     @IsOptional()
     @IsString()
     @MaxLength(255)
@@ -59,13 +85,29 @@ export class UpdateDocumentReqDTO {
     fileName?: string;
 
     @IsOptional()
+    @Type(() => Number)
     @IsInt()
     @IsPositive()
     sizeBytes?: number;
 
     @IsOptional()
-    @IsEnum(DocumentStatusEnum)
-    status?: DocumentStatusEnum;
+    @IsString()
+    @MinLength(2)
+    @MaxLength(255)
+    disciplina?: string;
+
+    @IsOptional()
+    @IsString()
+    @MinLength(2)
+    @MaxLength(255)
+    universidade?: string;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1900)
+    @Max(2100)
+    ano_curriculo?: number;
 
     @IsOptional()
     @IsString()
@@ -85,8 +127,14 @@ export class DocumentResDTO {
 
     sections!: DocumentSection[];
 
-    @IsEnum(DocumentStatusEnum)
-    status!: DocumentStatusEnum;
+    @IsString()
+    disciplina!: string;
+
+    @IsString()
+    universidade!: string;
+
+    @IsInt()
+    ano_curriculo!: number;
 
     @IsOptional()
     @IsString()

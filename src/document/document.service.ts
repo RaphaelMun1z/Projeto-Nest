@@ -11,13 +11,13 @@ import {
     CreatedDocumentResDTO,
     DocumentListResDTO,
     DocumentResDTO,
-    DocumentStatusEnum,
     ExtractedPdfResDTO,
     FindAllParameters,
     UpdateDocumentReqDTO,
 } from './document.dto';
 import { PdfExtractionService } from './pdf-extraction.service';
 import { DocumentEntity } from '../db/entities/document.entity';
+import { DocumentMapper } from './document.mapper';
 
 @Injectable()
 export class DocumentService {
@@ -50,18 +50,17 @@ export class DocumentService {
         }
 
         const extractedDocument = await this.pdfExtractionService.extract(file);
-        const savedDocument = await this.documentRepository.save({
-            fileName: extractedDocument.fileName,
-            sizeBytes: extractedDocument.sizeBytes,
-            sections: extractedDocument.sections,
-            status: DocumentStatusEnum.COMPLETED,
-            description: document.description ?? null,
-        });
+        const documentEntity = DocumentMapper.toEntity(
+            document,
+            extractedDocument,
+        );
+        const savedDocument =
+            await this.documentRepository.save(documentEntity);
 
-        return {
-            id: savedDocument.id,
-            previewHtml: extractedDocument.previewHtml,
-        };
+        return DocumentMapper.toCreatedResponse(
+            savedDocument,
+            extractedDocument.previewHtml,
+        );
     }
 
     async findAll(params: FindAllParameters): Promise<DocumentListResDTO[]> {
@@ -71,8 +70,16 @@ export class DocumentService {
             searchParams.fileName = Like(`%${params.fileName}%`);
         }
 
-        if (params.status) {
-            searchParams.status = params.status;
+        if (params.disciplina) {
+            searchParams.disciplina = Like(`%${params.disciplina}%`);
+        }
+
+        if (params.universidade) {
+            searchParams.universidade = Like(`%${params.universidade}%`);
+        }
+
+        if (params.ano_curriculo) {
+            searchParams.ano_curriculo = params.ano_curriculo;
         }
 
         const documentsFound = await this.documentRepository.find({
@@ -80,22 +87,16 @@ export class DocumentService {
             order: { createdAt: 'DESC' },
         });
 
-        return documentsFound.map((document) => ({
-            id: document.id,
-            fileName: document.fileName,
-            sizeBytes: document.sizeBytes,
-            status: document.status,
-            description: document.description,
-            createdAt: document.createdAt,
-            updatedAt: document.updatedAt,
-        }));
+        return documentsFound.map((document) =>
+            DocumentMapper.toListResponseDTO(document),
+        );
     }
 
     async findById(id: string): Promise<DocumentResDTO> {
         const document = await this.documentRepository.findOneBy({ id });
 
         if (document) {
-            return document;
+            return DocumentMapper.toResponseDTO(document);
         }
 
         throw new HttpException(
@@ -108,10 +109,8 @@ export class DocumentService {
         id: string,
         updatedDocument: UpdateDocumentReqDTO,
     ): Promise<string> {
-        const result = await this.documentRepository.update(
-            id,
-            updatedDocument,
-        );
+        const entity = DocumentMapper.toUpdateEntity(updatedDocument);
+        const result = await this.documentRepository.update(id, entity);
 
         if (result.affected) {
             return 'Documento atualizado com sucesso';
