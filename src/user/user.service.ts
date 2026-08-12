@@ -1,8 +1,8 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { hashSync as bcryptHashSync } from 'bcrypt';
-import { QueryFailedError, Repository } from 'typeorm';
-import { UserDTO, UserReqDTO } from './user.dto';
+import { Repository } from 'typeorm';
+import { UserReqDTO } from './user.dto';
 import { UserEntity } from '../db/entities/user.entity';
 
 @Injectable()
@@ -12,39 +12,43 @@ export class UserService {
         private readonly userRepository: Repository<UserEntity>,
     ) {}
 
-    async create(newUser: UserReqDTO): Promise<string> {
-        const existingUser = await this.userRepository.findOneBy({
-            username: newUser.username,
-        });
+    async create(
+        newUser: UserReqDTO,
+    ): Promise<{ id: string; username: string }> {
+        const userAlreadyRegistered = await this.findByUsername(
+            newUser.username,
+        );
 
-        if (existingUser) {
+        if (userAlreadyRegistered) {
             throw new ConflictException(
-                `O nome de usuário "${newUser.username}" já está cadastrado.`,
+                `O usuário "${newUser.username}" já foi cadastrado.`,
             );
         }
 
-        try {
-            await this.userRepository.save({
-                username: newUser.username,
-                password: bcryptHashSync(newUser.password, 10),
-            });
-        } catch (error) {
-            if (
-                error instanceof QueryFailedError &&
-                (error.driverError as { code?: string }).code === '23505'
-            ) {
-                throw new ConflictException(
-                    `O nome de usuário "${newUser.username}" já está cadastrado.`,
-                );
-            }
+        const dbUser = new UserEntity();
+        dbUser.username = newUser.username;
+        dbUser.password = bcryptHashSync(newUser.password, 10);
 
-            throw error;
-        }
+        const { id, username } = await this.userRepository.save(dbUser);
 
-        return 'Usuário criado com sucesso';
+        return { id, username };
     }
 
-    findByUsername(username: string): Promise<UserDTO | null> {
-        return this.userRepository.findOneBy({ username });
+    async findByUsername(
+        username: string,
+    ): Promise<{ id: string; username: string; password: string } | null> {
+        const userFound = await this.userRepository.findOne({
+            where: { username },
+        });
+
+        if (!userFound) {
+            return null;
+        }
+
+        return {
+            id: userFound.id,
+            username: userFound.username,
+            password: userFound.password,
+        };
     }
 }
