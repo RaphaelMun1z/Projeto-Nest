@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
-import { DOCUMENT_EXTRACTED_TOPIC, KAFKA_CLIENT } from './kafka.constants';
+import {
+    DOCUMENT_EXTRACTED_TOPIC,
+    DOCUMENT_EXTRACTION_TOPIC,
+    KAFKA_CLIENT,
+} from './kafka.constants';
 import { DocumentEventProducer } from './document-event-producer.service';
 
 @Module({
@@ -39,6 +43,12 @@ import { DocumentEventProducer } from './document-event-producer.service';
             inject: [ConfigService],
             useFactory: (configService: ConfigService) =>
                 configService.getOrThrow<string>('kafka.documentTopic'),
+        },
+        {
+            provide: DOCUMENT_EXTRACTION_TOPIC,
+            inject: [ConfigService],
+            useFactory: (configService: ConfigService) =>
+                configService.getOrThrow<string>('kafka.extractionTopic'),
         },
     ],
     exports: [DocumentEventProducer],

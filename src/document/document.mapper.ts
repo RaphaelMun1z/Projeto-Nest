@@ -22,6 +22,10 @@ export class DocumentMapper {
         entity.fileName = extracted.fileName;
         entity.sizeBytes = extracted.sizeBytes;
         entity.sections = extracted.sections;
+        entity.pages = null;
+        entity.status = 'pending';
+        entity.processingError = null;
+        entity.pdfData = null;
         entity.disciplina = document.disciplina;
         entity.universidade = document.universidade;
         entity.ano_curriculo = document.ano_curriculo;
@@ -55,11 +59,10 @@ export class DocumentMapper {
 
     static toCreatedResponse(
         entity: DocumentEntity,
-        previewHtml: string,
     ): CreatedDocumentResDTO {
         return {
             id: entity.id,
-            previewHtml,
+            status: entity.status,
         };
     }
 
@@ -69,6 +72,8 @@ export class DocumentMapper {
             fileName: entity.fileName,
             sizeBytes: entity.sizeBytes,
             sections: entity.sections,
+            status: entity.status,
+            processingError: entity.processingError,
             disciplina: entity.disciplina,
             universidade: entity.universidade,
             ano_curriculo: entity.ano_curriculo,
@@ -89,6 +94,8 @@ export class DocumentMapper {
             universidade: response.universidade,
             ano_curriculo: response.ano_curriculo,
             description: response.description,
+            status: response.status,
+            processingError: response.processingError,
             createdAt: response.createdAt,
             updatedAt: response.updatedAt,
         };

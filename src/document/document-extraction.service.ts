@@ -10,10 +10,14 @@ export class DocumentExtractionService {
         private readonly extractor: PdfTextExtractor,
     ) {}
 
+    validate(file: Express.Multer.File | undefined): asserts file is Express.Multer.File {
+        this.validation.validate(file);
+    }
+
     async extract(
         file: Express.Multer.File | undefined,
     ): Promise<ExtractedPdfResDTO> {
-        this.validation.validate(file);
+        this.validate(file);
         return this.extractor.extract(file);
     }
 }

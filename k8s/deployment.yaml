@@ -43,6 +43,11 @@ spec:
                 name: document-service-config
             - secretRef:
                 name: document-service-secret
+          env:
+            - name: INSTANCE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           readinessProbe:
             httpGet:
               path: /health/ready

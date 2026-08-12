@@ -6,6 +6,8 @@ import {
     Param,
     Patch,
     Post,
+    HttpCode,
+    HttpStatus,
     Query,
     UploadedFile,
     UseInterceptors,
@@ -34,6 +36,7 @@ export class DocumentController {
     }
 
     @Post()
+    @HttpCode(HttpStatus.ACCEPTED)
     @UseInterceptors(FileInterceptor('file'))
     async create(
         @UploadedFile() file: Express.Multer.File | undefined,

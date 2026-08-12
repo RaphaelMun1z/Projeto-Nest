@@ -1,6 +1,7 @@
 # Kubernetes
 
-Os manifests desta pasta implantam a API, PostgreSQL e Kafka no cluster local.
+Os manifests desta pasta implantam a API, o worker assíncrono de extração,
+PostgreSQL e Kafka no cluster local.
 Em produção, PostgreSQL e Kafka podem ser substituídos por serviços gerenciados
 ou deployments mantidos separadamente.
 
@@ -14,7 +15,11 @@ docker build -t projeto-nest:latest .
 
 Em um cluster local, carregue a imagem conforme a ferramenta utilizada. Em um
 cluster remoto, publique a imagem em um registry e altere `image` em
-`deployment.yaml` e `migration-job.yaml`.
+`deployment.yaml`, `worker-deployment.yaml` e `migration-job.yaml`.
+
+O `POST /documents` registra o documento e retorna `202 Accepted`. A extração
+é consumida pelo `document-extraction-worker`; consulte `GET /documents/:id`
+até o status ser `completed` ou `failed`.
 
 Crie um Secret real a partir do exemplo. Não versionar credenciais reais:
 

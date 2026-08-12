@@ -8,8 +8,8 @@ describe('DocumentService', () => {
         update: jest.fn(),
         delete: jest.fn(),
     };
-    const extraction = { extract: jest.fn() };
-    const outbox = { saveDocumentWithEvent: jest.fn() };
+    const extraction = { extract: jest.fn(), validate: jest.fn() };
+    const outbox = { saveDocumentWithEvent: jest.fn(), saveDocumentForExtraction: jest.fn() };
     let service: DocumentService;
 
     beforeEach(() => {

@@ -20,6 +20,8 @@ import { DocumentExtractionService } from './document-extraction.service';
 import { DocumentEntity } from '../db/entities/document.entity';
 import { DocumentMapper } from './document.mapper';
 import { DocumentOutboxService } from './document-outbox.service';
+import { getRuntimeInstanceName } from '../config/runtime-instance';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class DocumentService {
@@ -46,6 +48,7 @@ export class DocumentService {
         file: Express.Multer.File | undefined,
         document: CreateDocumentReqDTO,
     ): Promise<CreatedDocumentResDTO> {
+        this.pdfExtractionService.validate(file);
         if (file) {
             const existingDocument = await this.documentRepository.findOneBy({
                 fileName: file.originalname,
@@ -58,27 +61,29 @@ export class DocumentService {
             }
         }
 
-        const extractedDocument = await this.pdfExtractionService.extract(file);
         const documentEntity = DocumentMapper.toEntity(
             document,
-            extractedDocument,
+            {
+                fileName: file!.originalname,
+                sizeBytes: file!.size,
+                sections: [],
+            },
         );
-        const savedDocument =
-            await this.documentOutboxService.saveDocumentWithEvent(
-                documentEntity,
-                extractedDocument,
-            );
+        documentEntity.pdfData = file!.buffer;
+        const savedDocument = await this.documentOutboxService.saveDocumentForExtraction(
+            documentEntity,
+            randomUUID(),
+        );
 
         this.logger.log(
             `Documento persistido: id=${savedDocument.id}, arquivo=${savedDocument.fileName}`,
         );
 
-        this.logger.log(`Criação concluída: id=${savedDocument.id}`);
-
-        return DocumentMapper.toCreatedResponse(
-            savedDocument,
-            extractedDocument.previewHtml,
+        this.logger.log(
+            `Criação concluída: id=${savedDocument.id}, instancia=${getRuntimeInstanceName()}`,
         );
+
+        return DocumentMapper.toCreatedResponse(savedDocument);
     }
 
     async findAll(params: FindAllParameters): Promise<DocumentListResDTO[]> {

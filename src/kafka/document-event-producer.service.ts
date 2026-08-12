@@ -8,9 +8,14 @@ import {
 import { ClientKafka } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { randomUUID } from 'node:crypto';
-import { DOCUMENT_EXTRACTED_TOPIC, KAFKA_CLIENT } from './kafka.constants';
+import {
+    DOCUMENT_EXTRACTED_TOPIC,
+    DOCUMENT_EXTRACTION_TOPIC,
+    KAFKA_CLIENT,
+} from './kafka.constants';
 import {
     DOCUMENT_EXTRACTED_EVENT,
+    DOCUMENT_EXTRACTION_REQUESTED_EVENT,
     DocumentExtractedEvent,
 } from './events/document-extracted.event';
 
@@ -24,6 +29,8 @@ export class DocumentEventProducer implements OnModuleInit, OnModuleDestroy {
     constructor(
         @Inject(KAFKA_CLIENT) private readonly client: ClientKafka,
         @Inject(DOCUMENT_EXTRACTED_TOPIC) private readonly topic: string,
+        @Inject(DOCUMENT_EXTRACTION_TOPIC)
+        private readonly extractionTopic: string,
     ) {}
 
     async onModuleInit(): Promise<void> {
@@ -62,6 +69,26 @@ export class DocumentEventProducer implements OnModuleInit, OnModuleDestroy {
 
         this.logger.debug(
             `Evento ${event.eventType} publicado para ${event.documentId}`,
+        );
+    }
+
+    async publishExtractionRequested(
+        documentId: string,
+        eventId: string,
+    ): Promise<void> {
+        await firstValueFrom(
+            this.client.emit(this.extractionTopic, {
+                key: documentId,
+                value: {
+                    eventId,
+                    eventType: DOCUMENT_EXTRACTION_REQUESTED_EVENT,
+                    occurredAt: new Date().toISOString(),
+                    documentId,
+                },
+            }),
+        );
+        this.logger.debug(
+            `Solicitação de extração publicada: documentId=${documentId}`,
         );
     }
 

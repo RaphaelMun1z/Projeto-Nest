@@ -26,6 +26,18 @@ export class DocumentEntity {
     @Column({ name: 'sections', type: 'jsonb', default: () => "'[]'::jsonb" })
     sections!: DocumentSection[];
 
+    @Column({ name: 'pages', type: 'integer', nullable: true })
+    pages!: number | null;
+
+    @Column({ name: 'status', type: 'varchar', length: 20, default: 'pending' })
+    status!: 'pending' | 'processing' | 'completed' | 'failed';
+
+    @Column({ name: 'processing_error', type: 'text', nullable: true })
+    processingError!: string | null;
+
+    @Column({ name: 'pdf_data', type: 'bytea', nullable: true, select: false })
+    pdfData!: Buffer | null;
+
     @Column({ name: 'disciplina', type: 'varchar', length: 255 })
     disciplina!: string;
 

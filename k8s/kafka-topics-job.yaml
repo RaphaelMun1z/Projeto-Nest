@@ -22,3 +22,6 @@ spec:
               if ! kafka-topics --bootstrap-server kafka-1:19092 --list | grep -qx 'document.extracted.v1.DLT'; then
                 kafka-topics --bootstrap-server kafka-1:19092 --create --topic document.extracted.v1.DLT --partitions 3 --replication-factor 2
               fi
+              if ! kafka-topics --bootstrap-server kafka-1:19092 --list | grep -qx 'document.extraction.requested.v1'; then
+                kafka-topics --bootstrap-server kafka-1:19092 --create --topic document.extraction.requested.v1 --partitions 3 --replication-factor 2
+              fi

@@ -19,7 +19,13 @@ import { randomUUID } from 'node:crypto';
 @Injectable()
 export class DocumentOutboxService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(DocumentOutboxService.name);
-    private readonly pollIntervalMs = 5000;
+    /**
+     * A outbox precisa acompanhar o ritmo de entrada dos uploads. O lock
+     * pessimista em claimNextEvent continua garantindo que várias réplicas
+     * não processem o mesmo evento.
+     */
+    private readonly pollIntervalMs = 250;
+    private readonly batchSize = 25;
     private readonly lockTimeoutMs = 60_000;
     private processing = false;
     private poller?: ReturnType<typeof setInterval>;
@@ -79,6 +85,35 @@ export class DocumentOutboxService implements OnModuleInit, OnModuleDestroy {
         });
     }
 
+    async saveDocumentForExtraction(
+        document: DocumentEntity,
+        eventId: string,
+    ): Promise<DocumentEntity> {
+        return this.dataSource.transaction(async (manager) => {
+            const savedDocument = await manager.save(DocumentEntity, document);
+            const payload = {
+                eventId,
+                eventType: 'document.extraction.requested.v1',
+                occurredAt: new Date().toISOString(),
+                documentId: savedDocument.id,
+            };
+
+            await manager.save(OutboxEventEntity, {
+                aggregateId: savedDocument.id,
+                eventId,
+                eventType: payload.eventType,
+                payload,
+                status: 'pending',
+                attempts: 0,
+                availableAt: new Date(),
+                lastError: null,
+                lockedAt: null,
+            });
+
+            return savedDocument;
+        });
+    }
+
     private async processPendingEvents(): Promise<void> {
         if (this.processing) {
             return;
@@ -87,33 +122,14 @@ export class DocumentOutboxService implements OnModuleInit, OnModuleDestroy {
         this.processing = true;
 
         try {
-            const event = await this.claimNextEvent();
+            for (let processed = 0; processed < this.batchSize; processed += 1) {
+                const event = await this.claimNextEvent();
 
-            if (!event) {
-                return;
-            }
+                if (!event) {
+                    break;
+                }
 
-            try {
-                await this.producer.publishWithRetry(
-                    event.payload as unknown as DocumentExtractedEvent,
-                );
-                await this.outboxRepository.update(event.id, {
-                    status: 'published',
-                    lastError: null,
-                    lockedAt: null,
-                });
-            } catch (error) {
-                const lastError =
-                    error instanceof Error ? error.message : String(error);
-                await this.outboxRepository.update(event.id, {
-                    status: 'dead-letter',
-                    lastError,
-                    lockedAt: null,
-                });
-                this.logger.error(
-                    `Evento movido para dead-letter: eventId=${event.eventId}`,
-                    lastError,
-                );
+                await this.publishEvent(event);
             }
         } catch (error) {
             this.logger.error(
@@ -122,6 +138,39 @@ export class DocumentOutboxService implements OnModuleInit, OnModuleDestroy {
             );
         } finally {
             this.processing = false;
+        }
+    }
+
+    private async publishEvent(event: OutboxEventEntity): Promise<void> {
+        try {
+            if (event.eventType === 'document.extraction.requested.v1') {
+                await this.producer.publishExtractionRequested(
+                    event.aggregateId,
+                    event.eventId,
+                );
+            } else {
+                await this.producer.publishWithRetry(
+                    event.payload as unknown as DocumentExtractedEvent,
+                );
+            }
+
+            await this.outboxRepository.update(event.id, {
+                status: 'published',
+                lastError: null,
+                lockedAt: null,
+            });
+        } catch (error) {
+            const lastError =
+                error instanceof Error ? error.message : String(error);
+            await this.outboxRepository.update(event.id, {
+                status: 'dead-letter',
+                lastError,
+                lockedAt: null,
+            });
+            this.logger.error(
+                `Evento movido para dead-letter: eventId=${event.eventId}`,
+                lastError,
+            );
         }
     }
 

@@ -51,8 +51,10 @@ export interface ExtractedPdfResDTO {
 
 export interface CreatedDocumentResDTO {
     id: string;
-    previewHtml: string;
+    status: DocumentStatus;
 }
+
+export type DocumentStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export class CreateDocumentReqDTO {
     @IsString()
@@ -126,6 +128,10 @@ export class DocumentResDTO {
     sizeBytes!: number;
 
     sections!: DocumentSection[];
+
+    status!: DocumentStatus;
+
+    processingError!: string | null;
 
     @IsString()
     disciplina!: string;

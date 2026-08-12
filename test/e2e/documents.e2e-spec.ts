@@ -10,7 +10,7 @@ describe('Documents E2E', () => {
     const documentService = {
         create: jest.fn().mockResolvedValue({
             id: 'document-id',
-            previewHtml: '<html />',
+            status: 'pending',
         }),
         extractPdf: jest.fn(),
         findAll: jest.fn(),
@@ -49,8 +49,8 @@ describe('Documents E2E', () => {
             .field('universidade', 'Universidade de Teste')
             .field('ano_curriculo', '2026')
             .attach('file', Buffer.from('%PDF-1.7'), 'documento.pdf')
-            .expect(201)
-            .expect({ id: 'document-id', previewHtml: '<html />' });
+            .expect(202)
+            .expect({ id: 'document-id', status: 'pending' });
 
         expect(documentService.create).toHaveBeenCalledWith(
             expect.objectContaining({ originalname: 'documento.pdf' }),

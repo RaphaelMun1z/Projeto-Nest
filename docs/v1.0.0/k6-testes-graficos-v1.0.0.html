@@ -1,0 +1,474 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório de Testes k6 — v1.0.0</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f6f8;
+      color: #1f2937;
+    }
+
+    .container {
+      width: min(1200px, calc(100% - 32px));
+      margin: 32px auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #667085;
+      line-height: 1.5;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+
+    .metric {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .metric-label {
+      color: #667085;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .chart-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 18px;
+      min-height: 390px;
+    }
+
+    .chart-card.full {
+      grid-column: 1 / -1;
+    }
+
+    .chart-card h2 {
+      margin: 0 0 4px;
+      font-size: 18px;
+    }
+
+    .chart-card p {
+      margin: 0 0 18px;
+      color: #667085;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 300px;
+    }
+
+    .analysis {
+      margin-top: 20px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .analysis h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+
+    .analysis p {
+      margin-bottom: 0;
+      line-height: 1.65;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: right;
+      font-size: 13px;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+
+    th {
+      background: #f9fafb;
+    }
+
+    @media (max-width: 850px) {
+      .summary,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-card.full {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <header>
+      <h1>Resultados dos testes de carga k6</h1>
+      <p class="subtitle">
+        Comparação do comportamento do endpoint POST /documents conforme o aumento da concorrência.
+        O teste usa o executor per-vu-iterations, alterando VUs e iterações por VU.
+      </p>
+    </header>
+
+    <section class="summary">
+      <div class="metric">
+        <div class="metric-label">Maior carga 100% concluída</div>
+        <div class="metric-value">50 VUs</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Throughput em 50 VUs</div>
+        <div class="metric-value">18,7 req/s</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">P95 em 50 VUs</div>
+        <div class="metric-value">4,71 s</div>
+      </div>
+
+      <div class="metric">
+        <div class="metric-label">Conclusão em 100 VUs</div>
+        <div class="metric-value">42,26%</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="chart-card">
+        <h2>Latência por quantidade de VUs</h2>
+        <p>Tempo médio, P95 e maior tempo observado em cada cenário.</p>
+        <div class="chart-wrap">
+          <canvas id="latencyChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <h2>Conclusão das iterações</h2>
+        <p>Percentual da carga planejada que conseguiu terminar dentro do tempo definido.</p>
+        <div class="chart-wrap">
+          <canvas id="completionChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <h2>Throughput aproximado</h2>
+        <p>Iterações concluídas divididas pela duração total de cada execução.</p>
+        <div class="chart-wrap">
+          <canvas id="throughputChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card">
+        <h2>Iterações planejadas × concluídas</h2>
+        <p>Mostra a diferença de capacidade especialmente nos cenários de 50 e 100 VUs.</p>
+        <div class="chart-wrap">
+          <canvas id="iterationsChart"></canvas>
+        </div>
+      </article>
+
+      <article class="chart-card full">
+        <h2>Evolução da latência média</h2>
+        <p>O crescimento da latência se acentua conforme a concorrência se aproxima da região de saturação.</p>
+        <div class="chart-wrap">
+          <canvas id="averageLatencyChart"></canvas>
+        </div>
+      </article>
+    </section>
+
+    <section class="analysis">
+      <h2>Leitura dos resultados</h2>
+      <p>
+        Até 50 VUs, todas as iterações planejadas foram concluídas com sucesso. Em 100 VUs, 4.226 das 10.000 iterações planejadas foram concluídas dentro do limite de cinco minutos, representando 42,26% da carga planejada. As requisições concluídas continuaram retornando sucesso.
+      </p>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>VUs</th>
+          <th>Planejadas</th>
+          <th>Concluídas</th>
+          <th>Conclusão</th>
+          <th>Média</th>
+          <th>P95</th>
+          <th>Máximo</th>
+          <th>Duração</th>
+          <th>Req/s aprox.</th>
+        </tr>
+      </thead>
+      <tbody id="resultsTable"></tbody>
+    </table>
+  </main>
+
+  <script>
+    const tests = [
+      { vus: 5, planned: 5, completed: 5, avgMs: 510.4, p95Ms: 513.4, maxMs: 514, durationSec: 0.7 },
+      { vus: 5, planned: 50, completed: 50, avgMs: 500.72, p95Ms: 515.54, maxMs: 517, durationSec: 5.5 },
+      { vus: 10, planned: 100, completed: 100, avgMs: 537.08, p95Ms: 634.15, maxMs: 1040, durationSec: 6.7 },
+      { vus: 25, planned: 625, completed: 625, avgMs: 1200, p95Ms: 2320, maxMs: 3830, durationSec: 34.8 },
+      { vus: 40, planned: 1600, completed: 1600, avgMs: 1390, p95Ms: 2560, maxMs: 3850, durationSec: 62.7 },
+      { vus: 40, planned: 1600, completed: 1600, avgMs: 2080, p95Ms: 3840, maxMs: 10660, durationSec: 95.2 },
+      { vus: 50, planned: 2500, completed: 2500, avgMs: 2450, p95Ms: 4710, maxMs: 8410, durationSec: 133.6 },
+      { vus: 100, planned: 10000, completed: 4226, avgMs: 6950, p95Ms: 14680, maxMs: 20470, durationSec: 306.5 }
+    ];
+
+    const labels = tests.map(test => `${test.vus} VUs`);
+    const completion = tests.map(test => (test.completed / test.planned) * 100);
+    const throughput = tests.map(test => test.completed / test.durationSec);
+
+    const sharedOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    };
+
+    new Chart(document.getElementById('latencyChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Tempo médio',
+            data: tests.map(test => test.avgMs)
+          },
+          {
+            label: 'P95',
+            data: tests.map(test => test.p95Ms)
+          },
+          {
+            label: 'Máximo',
+            data: tests.map(test => test.maxMs)
+          }
+        ]
+      },
+      options: {
+        ...sharedOptions,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Tempo (ms)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Usuários virtuais'
+            }
+          }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('completionChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Iterações concluídas (%)',
+            data: completion
+          }
+        ]
+      },
+      options: {
+        ...sharedOptions,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            title: {
+              display: true,
+              text: 'Conclusão (%)'
+            }
+          }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('throughputChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Requisições por segundo',
+            data: throughput
+          }
+        ]
+      },
+      options: {
+        ...sharedOptions,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Req/s'
+            }
+          }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('iterationsChart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Planejadas',
+            data: tests.map(test => test.planned)
+          },
+          {
+            label: 'Concluídas',
+            data: tests.map(test => test.completed)
+          }
+        ]
+      },
+      options: {
+        ...sharedOptions,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Iterações'
+            }
+          }
+        }
+      }
+    });
+
+    new Chart(document.getElementById('averageLatencyChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Latência média',
+            data: tests.map(test => test.avgMs)
+          }
+        ]
+      },
+      options: {
+        ...sharedOptions,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Tempo médio (ms)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Quantidade de VUs'
+            }
+          }
+        }
+      }
+    });
+
+    const table = document.getElementById('resultsTable');
+
+    tests.forEach(test => {
+      const completionRate = (test.completed / test.planned) * 100;
+      const reqPerSecond = test.completed / test.durationSec;
+
+      const row = document.createElement('tr');
+
+      row.innerHTML = `
+        <td>${test.vus}</td>
+        <td>${test.planned.toLocaleString('pt-BR')}</td>
+        <td>${test.completed.toLocaleString('pt-BR')}</td>
+        <td>${completionRate.toFixed(2).replace('.', ',')}%</td>
+        <td>${formatTime(test.avgMs)}</td>
+        <td>${formatTime(test.p95Ms)}</td>
+        <td>${formatTime(test.maxMs)}</td>
+        <td>${formatDuration(test.durationSec)}</td>
+        <td>${reqPerSecond.toFixed(1).replace('.', ',')}</td>
+      `;
+
+      table.appendChild(row);
+    });
+
+    function formatTime(ms) {
+      if (ms >= 1000) {
+        return `${(ms / 1000).toFixed(2).replace('.', ',')} s`;
+      }
+
+      return `${ms.toFixed(2).replace('.', ',')} ms`;
+    }
+
+    function formatDuration(seconds) {
+      if (seconds >= 60) {
+        return '1 min';
+      }
+
+      return `${seconds.toFixed(1).replace('.', ',')} s`;
+    }
+  </script>
+</body>
+</html>

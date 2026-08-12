@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comparação k6 — v0.0.1 x v1.0.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f5f6f8; color: #1f2937; }
+    .container { width: min(1200px, calc(100% - 32px)); margin: 32px auto; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    .subtitle, .note { color: #667085; line-height: 1.5; }
+    .summary, .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .summary { margin: 24px 0; }
+    .metric, .chart-card, .note { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; }
+    .metric-label { color: #667085; font-size: 13px; margin-bottom: 8px; }
+    .metric-value { font-size: 24px; font-weight: 700; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .chart-card { min-height: 390px; }
+    .chart-card.full { grid-column: 1 / -1; }
+    .chart-card h2 { margin: 0 0 4px; font-size: 18px; }
+    .chart-card p { margin: 0 0 18px; color: #667085; font-size: 13px; line-height: 1.5; }
+    .chart-wrap { position: relative; height: 300px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; border: 1px solid #e5e7eb; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-size: 13px; }
+    th:first-child, td:first-child { text-align: left; }
+    th { background: #f9fafb; }
+    @media (max-width: 850px) { .summary, .grid { grid-template-columns: 1fr; } .chart-card.full { grid-column: auto; } }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>Comparação dos testes k6 — v0.0.1 x v1.0.0</h1>
+      <p class="subtitle">Comparação dos cenários de carga por quantidade de VUs, usando os resultados registrados nos relatórios das duas versões.</p>
+    </header>
+
+    <section class="summary">
+      <div class="metric"><div class="metric-label">Maior carga 100% concluída</div><div class="metric-value">v1: 50 VUs</div></div>
+      <div class="metric"><div class="metric-label">P95 em 40 VUs</div><div class="metric-value">v0: 1,59 s</div></div>
+      <div class="metric"><div class="metric-label">P95 em 40 VUs</div><div class="metric-value">v1: 2,56 s</div></div>
+      <div class="metric"><div class="metric-label">Conclusão em 100 VUs</div><div class="metric-value">v0: 25,42% | v1: 42,26%</div></div>
+    </section>
+
+    <section class="grid">
+      <article class="chart-card">
+        <h2>Tempo médio por quantidade de VUs</h2>
+        <p>Comparação da média registrada em cada cenário.</p>
+        <div class="chart-wrap"><canvas id="averageChart"></canvas></div>
+      </article>
+      <article class="chart-card">
+        <h2>P95 por quantidade de VUs</h2>
+        <p>Percentil 95 do tempo observado em cada versão.</p>
+        <div class="chart-wrap"><canvas id="p95Chart"></canvas></div>
+      </article>
+      <article class="chart-card">
+        <h2>Máximo observado</h2>
+        <p>Maior tempo registrado em cada cenário.</p>
+        <div class="chart-wrap"><canvas id="maxChart"></canvas></div>
+      </article>
+      <article class="chart-card">
+        <h2>Percentual de conclusão</h2>
+        <p>Percentual de iterações planejadas que foram concluídas dentro do limite.</p>
+        <div class="chart-wrap"><canvas id="completionChart"></canvas></div>
+      </article>
+      <article class="chart-card full">
+        <h2>Throughput por quantidade de VUs</h2>
+        <p>Iterações concluídas por segundo em cada versão.</p>
+        <div class="chart-wrap"><canvas id="throughputChart"></canvas></div>
+      </article>
+    </section>
+
+    <div class="note">
+      <strong>Nota metodológica:</strong> a v0.0.1 mede o fluxo síncrono de criação do documento. A v1.0.0 mede o fluxo completo assíncrono, incluindo Outbox, Kafka, worker e confirmação do status <code>completed</code>. Portanto, os gráficos são comparativos, mas não representam uma equivalência perfeita de medição.
+    </div>
+
+    <table>
+      <thead><tr><th>VUs</th><th>v0 média</th><th>v1 média</th><th>v0 P95</th><th>v1 P95</th><th>v0 conclusão</th><th>v1 conclusão</th></tr></thead>
+      <tbody id="resultsTable"></tbody>
+    </table>
+  </main>
+
+  <script>
+    const tests = [
+      { vus: 5, v0: { avg: 105.72, p95: 145.07, max: 150.09, completed: 5, planned: 5, duration: 0.2 }, v1: { avg: 510.4, p95: 513.4, max: 514, completed: 5, planned: 5, duration: 0.7 } },
+      { vus: 10, v0: { avg: 213.78, p95: 310.02, max: 374.22, completed: 100, planned: 100, duration: 2.3 }, v1: { avg: 537.08, p95: 634.15, max: 1040, completed: 100, planned: 100, duration: 6.7 } },
+      { vus: 25, v0: { avg: 550.86, p95: 677.04, max: 931.74, completed: 625, planned: 625, duration: 14.1 }, v1: { avg: 1200, p95: 2320, max: 3830, completed: 625, planned: 625, duration: 34.8 } },
+      { vus: 40, v0: { avg: 954.64, p95: 1590, max: 2000, completed: 1600, planned: 1600, duration: 39.5 }, v1: { avg: 1390, p95: 2560, max: 3850, completed: 1600, planned: 1600, duration: 62.7 } },
+      { vus: 50, v0: { avg: 1470, p95: 2420, max: 4170, completed: 2062, planned: 2500, duration: 60 }, v1: { avg: 2450, p95: 4710, max: 8410, completed: 2500, planned: 2500, duration: 133.6 } },
+      { vus: 100, v0: { avg: 2410, p95: 4590, max: 6960, completed: 2542, planned: 10000, duration: 60 }, v1: { avg: 6950, p95: 14680, max: 20470, completed: 4226, planned: 10000, duration: 306.5 } }
+    ];
+    const labels = tests.map(test => `${test.vus} VUs`);
+    const options = { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' } } };
+    const comparisonDatasets = (field) => [
+      { label: 'v0.0.1', data: tests.map(test => test.v0[field]), borderColor: '#2563eb', backgroundColor: '#2563eb' },
+      { label: 'v1.0.0', data: tests.map(test => test.v1[field]), borderColor: '#dc2626', backgroundColor: '#dc2626' }
+    ];
+    function chart(id, field, type = 'line', title = 'Tempo (ms)') {
+      new Chart(document.getElementById(id), { type, data: { labels, datasets: comparisonDatasets(field) }, options: { ...options, scales: { y: { beginAtZero: true, title: { display: true, text: title } } } } });
+    }
+    chart('averageChart', 'avg');
+    chart('p95Chart', 'p95');
+    chart('maxChart', 'max');
+    new Chart(document.getElementById('completionChart'), { type: 'line', data: { labels, datasets: [
+      { label: 'v0.0.1', data: tests.map(test => test.v0.completed / test.v0.planned * 100), borderColor: '#2563eb' },
+      { label: 'v1.0.0', data: tests.map(test => test.v1.completed / test.v1.planned * 100), borderColor: '#dc2626' }
+    ] }, options: { ...options, scales: { y: { beginAtZero: true, max: 100, title: { display: true, text: 'Conclusão (%)' } } } } });
+    new Chart(document.getElementById('throughputChart'), { type: 'line', data: { labels, datasets: [
+      { label: 'v0.0.1', data: tests.map(test => test.v0.completed / test.v0.duration), borderColor: '#2563eb' },
+      { label: 'v1.0.0', data: tests.map(test => test.v1.completed / test.v1.duration), borderColor: '#dc2626' }
+    ] }, options: { ...options, scales: { y: { beginAtZero: true, title: { display: true, text: 'Iterações/s' } } } } });
+    const format = ms => ms >= 1000 ? `${(ms / 1000).toFixed(2).replace('.', ',')} s` : `${ms.toFixed(2).replace('.', ',')} ms`;
+    document.getElementById('resultsTable').innerHTML = tests.map(test => `<tr><td>${test.vus}</td><td>${format(test.v0.avg)}</td><td>${format(test.v1.avg)}</td><td>${format(test.v0.p95)}</td><td>${format(test.v1.p95)}</td><td>${(test.v0.completed / test.v0.planned * 100).toFixed(2).replace('.', ',')}%</td><td>${(test.v1.completed / test.v1.planned * 100).toFixed(2).replace('.', ',')}%</td></tr>`).join('');
+  </script>
+</body>
+</html>

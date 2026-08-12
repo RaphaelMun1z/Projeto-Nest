@@ -8,6 +8,8 @@ resources:
   - kafka.yaml
   - kafka-topics-job.yaml
   - deployment.yaml
+  - worker-deployment.yaml
   - service.yaml
   - hpa.yaml
+  - worker-hpa.yaml
   - migration-job.yaml
