@@ -32,4 +32,20 @@ export default tseslint.config(
             'prettier/prettier': ['error', { endOfLine: 'auto' }],
         },
     },
+    {
+        files: ['documents.test.js'],
+        ...tseslint.configs.disableTypeChecked,
+        languageOptions: {
+            sourceType: 'module',
+            parserOptions: {
+                project: false,
+            },
+            globals: {
+                // Globais disponibilizados pelo runtime do k6.
+                open: 'readonly',
+                __VU: 'readonly',
+                __ITER: 'readonly',
+            },
+        },
+    },
 );
