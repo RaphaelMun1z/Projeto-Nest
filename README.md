@@ -1,108 +1,140 @@
-## Sumário
+# Projeto NestJS — API de Documentos
 
-- [Endpoints](#endpoints)
-- [Comandos](#comandos)
+API NestJS para extração, criação e gerenciamento de documentos PDF.
+
+## Pré-requisitos
+
+- Node.js e npm
+- Docker e Docker Compose
+
+## Configuração
+
+Instale as dependências:
+
+```bash
+npm install
+```
+
+Crie o arquivo `.env` a partir do exemplo:
+
+```bash
+copy .env.example .env
+```
+
+Para usar o banco fornecido pelo Docker Compose, confira se o `.env` contém:
+
+```env
+MAX_PDF_SIZE_BYTES=10485760
+
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+DB_NAME=db-documents
+```
+
+## Banco de dados
+
+Inicie o PostgreSQL:
+
+```bash
+docker compose up -d
+```
+
+Execute as migrations:
+
+```bash
+npm run migration:run
+```
+
+Para limpar completamente o banco e recriá-lo:
+
+```bash
+docker compose down -v
+docker compose up -d
+npm run migration:run
+```
+
+O comando `docker compose down -v` remove o volume e apaga todos os dados do banco.
+
+## Executando a aplicação
+
+Desenvolvimento:
+
+```bash
+npm run start:dev
+```
+
+A API estará disponível em `http://localhost:3000`.
+
+Produção:
+
+```bash
+npm run build
+npm run start:prod
+```
 
 ## Endpoints
 
-> 🔒 Endpoint protegido: exige o header `Authorization: Bearer <token>`.
+| Método | Caminho | Descrição |
+|---|---|---|
+| POST | `/documents/extract` | Extrai o conteúdo de um PDF sem salvar um documento. |
+| POST | `/documents` | Extrai o PDF e cria um documento. |
+| GET | `/documents` | Lista documentos. Aceita os filtros opcionais `fileName` e `status`. |
+| GET | `/documents/:id` | Busca um documento pelo UUID. |
+| PATCH | `/documents/:id` | Atualiza parcialmente um documento. |
+| DELETE | `/documents/:id` | Remove um documento. |
 
-<details>
-<summary>auth</summary>
+### Extrair ou criar documento
 
-| Método | Caminho | Objetivo | Exemplo |
-|---|---|---|---|
-| POST | `/auth/login` | Autenticar usuário e gerar token JWT. | `{"username":"usuario.exemplo","password":"senha-segura"}` |
+Os endpoints `POST /documents/extract` e `POST /documents` usam `multipart/form-data`:
 
-</details>
+- `file`: arquivo PDF obrigatório
+- `description`: descrição opcional, usada somente em `POST /documents`
 
-<details>
-<summary>users</summary>
+Exemplo com cURL:
 
-| Método | Caminho | Objetivo | Exemplo |
-|---|---|---|---|
-| POST | `/users` | Criar usuário. | `{"username":"novo.usuario","password":"senha-segura"}` |
+```bash
+curl -X POST http://localhost:3000/documents/extract \
+  -F "file=@./documento.pdf"
+```
 
-</details>
+### Listar documentos com filtros
 
-<details>
-<summary>documents</summary>
+```text
+GET /documents?fileName=documento&status=COMPLETED
+```
 
-| Método | Caminho | Objetivo | Exemplo |
-|---|---|---|---|
-| POST | 🔒 `/documents/extract` | Receber e extrair o conteúdo de um PDF sem criar registro. | `multipart/form-data: file=documento.pdf` |
-| POST | 🔒 `/documents` | Extrair o PDF, salvar as seções e criar o registro. | `multipart/form-data: file=documento.pdf, description=Descrição` |
-| GET | 🔒 `/documents` | Listar documentos com filtros opcionais. | `?fileName=documento.pdf&status=COMPLETED` |
-| GET | 🔒 `/documents/:id` | Buscar documento pelo ID. | `{"id":"550e8400-e29b-41d4-a716-446655440000"}` |
-| PATCH | 🔒 `/documents/:id` | Atualizar parcialmente um documento. | `{"status":"COMPLETED","description":"Descrição atualizada"}` |
-| DELETE | 🔒 `/documents/:id` | Remover documento pelo ID. | `{"id":"550e8400-e29b-41d4-a716-446655440000"}` |
+Os status aceitos são `PENDING`, `PROCESSING`, `COMPLETED` e `FAILED`.
 
-</details>
+### Atualizar documento
 
-## Comandos
+```json
+{
+  "status": "COMPLETED",
+  "description": "Documento processado"
+}
+```
 
-### Migrations
+## Postman
 
-| Objetivo | Comando |
-|---|---|
-| Criar uma migration com nome personalizado | `npm run migration:create --name=document-table` |
-| Executar as migrations pendentes | `npm run migration:run` |
-| Reverter a última migration | `npm run migration:revert` |
+A collection completa está disponível em:
 
-| Objetivo | Comando |
-|---|---|
-| Instalar o Nest CLI globalmente | `npm i -g @nestjs/cli` |
-| Criar um novo projeto | `nest new nome-do-projeto` |
+`postman/projeto-nest.postman_collection.json`
 
-
-Execute os comandos a partir da pasta raiz do projeto.
+## Comandos disponíveis
 
 | Objetivo | Comando |
 |---|---|
-| Instalar dependências | `npm install` |
-| Iniciar a aplicação | `npm run start` |
-| Iniciar em modo desenvolvimento | `npm run start:dev` |
+| Iniciar normalmente | `npm run start` |
+| Iniciar em desenvolvimento | `npm run start:dev` |
 | Iniciar com depuração | `npm run start:debug` |
-| Compilar o projeto | `npm run build` |
-| Executar a versão compilada | `npm run start:prod` |
-
-
-
-O formato abreviado `nest g` significa `nest generate`. O caminho pode ser alterado conforme a organização do projeto.
-
-| Objetivo | Comando |
-|---|---|
-| Gerar um módulo | `nest g module users` |
-| Gerar um controller | `nest g controller users` |
-| Gerar um service/provider | `nest g service users` |
-| Gerar uma classe | `nest g class users/dto/create-user.dto` |
-| Gerar uma interface | `nest g interface users/interfaces/user` |
-| Gerar um recurso completo | `nest g resource users` |
-| Gerar um CRUD completo | `nest g resource users --no-spec` |
-| Gerar um guard | `nest g guard auth/guards/auth` |
-| Gerar um interceptor | `nest g interceptor common/logging` |
-| Gerar um pipe | `nest g pipe common/pipes/validation` |
-| Gerar um middleware | `nest g middleware common/middleware/logger` |
-| Gerar um filtro de exceção | `nest g filter common/filters/http-exception` |
-| Gerar um decorator | `nest g decorator common/decorators/user` |
-| Não gerar testes | `nest g controller users --no-spec` |
-| Ver arquivos sem criá-los | `nest g service users --dry-run` |
-
-
-
-| Objetivo | Comando |
-|---|---|
-| Formatar o código | `npm run format` |
+| Compilar | `npm run build` |
+| Executar versão compilada | `npm run start:prod` |
+| Formatar código | `npm run format` |
 | Verificar e corrigir lint | `npm run lint` |
 | Executar testes | `npm test` |
-| Executar testes observando alterações | `npm run test:watch` |
-| Gerar relatório de cobertura | `npm run test:cov` |
 | Executar testes end-to-end | `npm run test:e2e` |
-
-
-| Objetivo | Comando |
-|---|---|
-| Adicionar uma dependência | `npm i nome-do-pacote` |
-| Adicionar uma dependência de desenvolvimento | `npm i -D nome-do-pacote` |
-| Remover uma dependência | `npm uninstall nome-do-pacote` |
-| Atualizar dependências | `npm update` |
+| Criar migration | `npm run migration:create --name=nome-da-migration` |
+| Executar migrations | `npm run migration:run` |
+| Reverter última migration | `npm run migration:revert` |

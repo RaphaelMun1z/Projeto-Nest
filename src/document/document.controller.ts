@@ -8,7 +8,6 @@ import {
     Post,
     Query,
     UploadedFile,
-    UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -21,9 +20,7 @@ import type {
     FindAllParameters,
     DocumentRouteParameters,
 } from './document.dto';
-import { AuthGuard } from '../auth/auth.guard';
 
-@UseGuards(AuthGuard)
 @Controller('documents')
 export class DocumentController {
     constructor(private readonly documentService: DocumentService) {}
