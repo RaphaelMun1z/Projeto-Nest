@@ -100,3 +100,8 @@ export class DocumentResDTO {
 }
 
 export type DocumentListResDTO = Omit<DocumentResDTO, 'sections'>;
+
+export class DocumentRouteParameters {
+    @IsUUID()
+    id!: string;
+}

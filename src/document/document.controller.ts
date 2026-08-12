@@ -19,6 +19,7 @@ import type {
     DocumentListResDTO,
     ExtractedPdfResDTO,
     FindAllParameters,
+    DocumentRouteParameters,
 } from './document.dto';
 import { AuthGuard } from '../auth/auth.guard';
 
@@ -58,10 +59,10 @@ export class DocumentController {
 
     @Patch('/:id')
     async update(
-        @Param('id') id: string,
+        @Param() params: DocumentRouteParameters,
         @Body() updatedDocument: UpdateDocumentReqDTO,
     ): Promise<string> {
-        return await this.documentService.update(id, updatedDocument);
+        return await this.documentService.update(params.id, updatedDocument);
     }
 
     @Delete('/:id')

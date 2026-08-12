@@ -5,7 +5,7 @@ import {
     Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Like, Repository } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import {
     CreateDocumentReqDTO,
     CreatedDocumentResDTO,
@@ -65,26 +65,30 @@ export class DocumentService {
     }
 
     async findAll(params: FindAllParameters): Promise<DocumentListResDTO[]> {
-        const documents = await this.documentRepository.find({
-            select: {
-                id: true,
-                fileName: true,
-                sizeBytes: true,
-                status: true,
-                description: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-            where: {
-                ...(params.fileName
-                    ? { fileName: Like(`%${params.fileName}%`) }
-                    : {}),
-                ...(params.status ? { status: params.status } : {}),
-            },
+        const searchParams: FindOptionsWhere<DocumentEntity> = {};
+
+        if (params.fileName) {
+            searchParams.fileName = Like(`%${params.fileName}%`);
+        }
+
+        if (params.status) {
+            searchParams.status = params.status;
+        }
+
+        const documentsFound = await this.documentRepository.find({
+            where: searchParams,
             order: { createdAt: 'DESC' },
         });
 
-        return documents;
+        return documentsFound.map((document) => ({
+            id: document.id,
+            fileName: document.fileName,
+            sizeBytes: document.sizeBytes,
+            status: document.status,
+            description: document.description,
+            createdAt: document.createdAt,
+            updatedAt: document.updatedAt,
+        }));
     }
 
     async findById(id: string): Promise<DocumentResDTO> {
