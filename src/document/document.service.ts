@@ -27,10 +27,10 @@ export class DocumentService {
         private readonly pdfExtractionService: PdfExtractionService,
     ) {}
 
-    extractPdf(
+    async extractPdf(
         file: Express.Multer.File | undefined,
     ): Promise<ExtractedPdfResDTO> {
-        return this.pdfExtractionService.extract(file);
+        return await this.pdfExtractionService.extract(file);
     }
 
     async create(

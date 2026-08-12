@@ -29,41 +29,43 @@ export class DocumentController {
 
     @Post('extract')
     @UseInterceptors(FileInterceptor('file'))
-    extract(
+    async extract(
         @UploadedFile() file: Express.Multer.File | undefined,
     ): Promise<ExtractedPdfResDTO> {
-        return this.documentService.extractPdf(file);
+        return await this.documentService.extractPdf(file);
     }
 
     @Post()
     @UseInterceptors(FileInterceptor('file'))
-    create(
+    async create(
         @UploadedFile() file: Express.Multer.File | undefined,
         @Body() document: CreateDocumentReqDTO,
     ) {
-        return this.documentService.create(file, document);
+        return await this.documentService.create(file, document);
     }
 
     @Get()
-    findAll(@Query() params: FindAllParameters): Promise<DocumentListResDTO[]> {
-        return this.documentService.findAll(params);
+    async findAll(
+        @Query() params: FindAllParameters,
+    ): Promise<DocumentListResDTO[]> {
+        return await this.documentService.findAll(params);
     }
 
     @Get('/:id')
-    findById(@Param('id') id: string): Promise<DocumentResDTO> {
-        return this.documentService.findById(id);
+    async findById(@Param('id') id: string): Promise<DocumentResDTO> {
+        return await this.documentService.findById(id);
     }
 
     @Patch('/:id')
-    update(
+    async update(
         @Param('id') id: string,
         @Body() updatedDocument: UpdateDocumentReqDTO,
     ): Promise<string> {
-        return this.documentService.update(id, updatedDocument);
+        return await this.documentService.update(id, updatedDocument);
     }
 
     @Delete('/:id')
-    delete(@Param('id') id: string): Promise<string> {
-        return this.documentService.delete(id);
+    async delete(@Param('id') id: string): Promise<string> {
+        return await this.documentService.delete(id);
     }
 }
