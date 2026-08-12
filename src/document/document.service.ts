@@ -3,6 +3,7 @@ import {
     HttpException,
     HttpStatus,
     Injectable,
+    Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Like, Repository } from 'typeorm';
@@ -15,22 +16,30 @@ import {
     FindAllParameters,
     UpdateDocumentReqDTO,
 } from './document.dto';
-import { PdfExtractionService } from './pdf-extraction.service';
+import { DocumentExtractionService } from './document-extraction.service';
 import { DocumentEntity } from '../db/entities/document.entity';
 import { DocumentMapper } from './document.mapper';
+import { DocumentOutboxService } from './document-outbox.service';
 
 @Injectable()
 export class DocumentService {
+    private readonly logger = new Logger(DocumentService.name);
+
     constructor(
         @InjectRepository(DocumentEntity)
         private readonly documentRepository: Repository<DocumentEntity>,
-        private readonly pdfExtractionService: PdfExtractionService,
+        private readonly pdfExtractionService: DocumentExtractionService,
+        private readonly documentOutboxService: DocumentOutboxService,
     ) {}
 
     async extractPdf(
         file: Express.Multer.File | undefined,
     ): Promise<ExtractedPdfResDTO> {
-        return await this.pdfExtractionService.extract(file);
+        const extracted = await this.pdfExtractionService.extract(file);
+        this.logger.log(
+            `PDF extraído: arquivo=${extracted.fileName}, páginas=${extracted.pages}, seções=${extracted.sections.length}`,
+        );
+        return extracted;
     }
 
     async create(
@@ -55,7 +64,16 @@ export class DocumentService {
             extractedDocument,
         );
         const savedDocument =
-            await this.documentRepository.save(documentEntity);
+            await this.documentOutboxService.saveDocumentWithEvent(
+                documentEntity,
+                extractedDocument,
+            );
+
+        this.logger.log(
+            `Documento persistido: id=${savedDocument.id}, arquivo=${savedDocument.fileName}`,
+        );
+
+        this.logger.log(`Criação concluída: id=${savedDocument.id}`);
 
         return DocumentMapper.toCreatedResponse(
             savedDocument,
@@ -87,6 +105,10 @@ export class DocumentService {
             order: { createdAt: 'DESC' },
         });
 
+        this.logger.debug(
+            `Consulta de documentos concluída: resultados=${documentsFound.length}`,
+        );
+
         return documentsFound.map((document) =>
             DocumentMapper.toListResponseDTO(document),
         );
@@ -96,6 +118,7 @@ export class DocumentService {
         const document = await this.documentRepository.findOneBy({ id });
 
         if (document) {
+            this.logger.debug(`Documento encontrado: id=${id}`);
             return DocumentMapper.toResponseDTO(document);
         }
 
@@ -113,6 +136,7 @@ export class DocumentService {
         const result = await this.documentRepository.update(id, entity);
 
         if (result.affected) {
+            this.logger.log(`Documento atualizado: id=${id}`);
             return 'Documento atualizado com sucesso';
         }
 
@@ -126,6 +150,7 @@ export class DocumentService {
         const result = await this.documentRepository.delete(id);
 
         if (result.affected) {
+            this.logger.log(`Documento excluído: id=${id}`);
             return 'Documento excluído com sucesso';
         }
 

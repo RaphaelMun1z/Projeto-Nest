@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { DocumentSection, ExtractedPdfResDTO } from './document.dto';
 
 // Carrega o LiteParse dinamicamente para evitar conflito com o CommonJS.
@@ -9,10 +8,9 @@ const loadLiteParse = new Function(
 ) as () => Promise<typeof import('@llamaindex/liteparse')>;
 
 @Injectable()
-export class PdfExtractionService {
-    private readonly logger = new Logger(PdfExtractionService.name);
-
-    private readonly maxPdfSizeBytes: number;
+export class PdfTextExtractor {
+    private readonly logger = new Logger(PdfTextExtractor.name);
+    private readonly maxPdfSizeBytes = 10 * 1024 * 1024;
 
     private readonly expectedSections = [
         'IDENTIFICAÇÃO',
@@ -24,22 +22,7 @@ export class PdfExtractionService {
         'APROVAÇÃO',
     ];
 
-    constructor(private readonly configService: ConfigService) {
-        const configuredMaxPdfSize = Number(
-            this.configService.get<string>('MAX_PDF_SIZE_BYTES'),
-        );
-
-        this.maxPdfSizeBytes =
-            Number.isFinite(configuredMaxPdfSize) && configuredMaxPdfSize > 0
-                ? configuredMaxPdfSize
-                : 10 * 1024 * 1024;
-    }
-
-    async extract(
-        file: Express.Multer.File | undefined,
-    ): Promise<ExtractedPdfResDTO> {
-        this.validatePdf(file);
-
+    async extract(file: Express.Multer.File): Promise<ExtractedPdfResDTO> {
         try {
             const { LiteParse } = await loadLiteParse();
 
@@ -55,6 +38,10 @@ export class PdfExtractionService {
             const sections = this.extractSections(normalizedText);
 
             this.validateSections(sections);
+
+            this.logger.debug(
+                `Extração concluída: arquivo=${file.originalname}, páginas=${result.pages.length}`,
+            );
 
             return {
                 fileName: file.originalname,
@@ -79,6 +66,7 @@ export class PdfExtractionService {
         }
     }
 
+    /* validation is handled by PdfValidationService */
     private validatePdf(
         file: Express.Multer.File | undefined,
     ): asserts file is Express.Multer.File {

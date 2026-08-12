@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { DocumentEntity } from './entities/document.entity';
+import { OutboxEventEntity } from './entities/outbox-event.entity';
 
 config();
 
@@ -14,8 +15,8 @@ const dataSourceOptions: DataSourceOptions = {
     username: configService.get<string>('DB_USERNAME'),
     password: configService.get<string>('DB_PASSWORD'),
     database: configService.get<string>('DB_NAME'),
-    entities: [DocumentEntity],
-    migrations: [__dirname + '/../migrations/*.ts'],
+    entities: [DocumentEntity, OutboxEventEntity],
+    migrations: [__dirname + '/../migrations/*{.ts,.js}'],
     synchronize: false,
 };
 

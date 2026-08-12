@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: document-service-config
+  namespace: document-service
+data:
+  NODE_ENV: production
+  PORT: "3000"
+  MAX_PDF_SIZE_BYTES: "10485760"
+  DB_HOST: postgresql
+  DB_PORT: "5432"
+  DB_NAME: db-documents
+  KAFKA_BROKERS: kafka-1:19092,kafka-2:19092
+  KAFKA_CLIENT_ID: document-service
+  KAFKA_DOCUMENT_TOPIC: document.extracted.v1

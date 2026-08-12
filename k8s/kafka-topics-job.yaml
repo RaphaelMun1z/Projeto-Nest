@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topics-init
+  namespace: document-service
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: topics
+          image: confluentinc/cp-kafka:7.6.12
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -e
+              until kafka-topics --bootstrap-server kafka-1:19092 --list >/dev/null 2>&1; do sleep 5; done
+              if ! kafka-topics --bootstrap-server kafka-1:19092 --list | grep -qx 'document.extracted.v1'; then
+                kafka-topics --bootstrap-server kafka-1:19092 --create --topic document.extracted.v1 --partitions 3 --replication-factor 2
+              fi
+              if ! kafka-topics --bootstrap-server kafka-1:19092 --list | grep -qx 'document.extracted.v1.DLT'; then
+                kafka-topics --bootstrap-server kafka-1:19092 --create --topic document.extracted.v1.DLT --partitions 3 --replication-factor 2
+              fi
